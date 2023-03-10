@@ -135,6 +135,18 @@ const search_coupons = (req, res) => {
   });
 };
 
+/**
+ * @api {post} /applied_coupon Applied Coupon
+ * @apiName AppliedCoupon
+ * @apiGroup Coupons
+ * @apiDescription Call this function to reflect the usage of a coupon after been applied, to avoid overusage of a coupon overtime.
+ * @apiBody {String} coupon Coupon ID as returned from `/retrieve_coupon` endpoint
+ * @apiBody {String} user User ID of coupon owner in the case of a `premium` coupon
+ *
+ * @apiSuccessExample {json} Successful Response:
+ * { success: true, coupon: "coupons~dy62P4W6Sa92L02YCF~1677750283500" }
+ *
+ */
 const applied_coupon = (req, res) => {
   let { coupon, user } = req.body;
 
