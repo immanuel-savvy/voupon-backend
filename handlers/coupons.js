@@ -6,6 +6,7 @@ import {
   VENDORS_COUPONS,
 } from "../ds/conn";
 import { generate_random_string } from "../functions";
+import { reset_vendor_id } from "./voucher";
 
 const new_coupon = (req, res) => {
   let coupon = req.body;
@@ -62,7 +63,6 @@ const coupons = (req, res) => {
 
 const premium_coupon_obtained = (req, res) => {
   let details = req.body;
-  console.log(details);
 
   let { user, email, coupon } = details;
   if (!user) {
@@ -133,8 +133,40 @@ const search_coupons = (req, res) => {
   });
 };
 
-const verify_coupon = (req, res) => {
-  let { coupon_code, email, type } = req.body;
+const retrieve_coupon = (req, res) => {
+  verify_coupon(req, res, true);
+};
+
+const applied_coupon = (req, res) => {
+  let { coupon, user } = req.body;
+
+  if (!coupon)
+    return res.json({
+      ok: false,
+      message: "what coupon?",
+      data: { message: "Coupon field is missing" },
+    });
+  if (!user && !coupon.startWith("coupon"))
+    return res.json({
+      ok: false,
+      message: "coupon user missing",
+      data: { coupon },
+    });
+
+  if (coupon.startWith("coupon"))
+    COUPONS.update(coupon, { quantities: { $dec: 1 } });
+  else if (coupon.startWith("user_coupons"))
+    USER_COUPONS.update({ _id: coupon, user }, { quantities: { $dec: 1 } });
+
+  res.json({
+    ok: true,
+    message: "coupon applied",
+    data: { success: true, coupon },
+  });
+};
+
+const verify_coupon = (req, res, minimal = false) => {
+  let { coupon_code, vendor, email, type } = req.body;
 
   let coupon;
   if (type === "open") {
@@ -147,10 +179,32 @@ const verify_coupon = (req, res) => {
     coupon = USER_COUPONS.readone({ user: user._id, coupon_code });
   }
 
+  if (vendor) {
+    if (vendor.includes("$")) vendor = reset_vendor_id(vendor);
+    if (coupon.coupon.vendor._id !== vendor)
+      return res.json({
+        ok: false,
+        message: "coupon does not belong with vendor",
+        data: { message: "coupon does not belong with vendor" },
+      });
+  }
+
   if (!coupon)
     return res.json({ ok: false, data: { message: "Coupon not found" } });
 
-  res.json({ ok: true, data: { coupon } });
+  res.json({
+    ok: true,
+    data: minimal
+      ? {
+          coupon: {
+            user: coupon.user,
+            value: coupon.coupon.value,
+            coupon_id: coupon.coupon._id,
+            _id: coupon._id,
+          },
+        }
+      : { coupon },
+  });
 };
 
 const user_coupons = (req, res) => {
@@ -169,6 +223,8 @@ export {
   vendor_coupons,
   verify_coupon,
   coupons,
+  retrieve_coupon,
   user_coupons,
+  applied_coupon,
   premium_coupon_obtained,
 };

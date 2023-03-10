@@ -66,9 +66,11 @@ import {
 } from "./handlers/voucher";
 import { get_banks, transactions } from "./handlers/wallets";
 import {
+  applied_coupon,
   coupons,
   new_coupon,
   premium_coupon_obtained,
+  retrieve_coupon,
   search_coupons,
   user_coupons,
   vendor_coupons,
@@ -164,6 +166,8 @@ const router = (app) => {
   app.post("/premium_coupon_obtained", premium_coupon_obtained);
   app.post("/vendor_coupons/:vendor", vendor_coupons);
 
+  app.post("/retrieve_coupon", retrieve_coupon);
+  app.post("/applied_coupon", applied_coupon);
   app.post("/transactions", transactions);
   app.post("/generate_voucher_otp", generate_voucher_otp);
 
