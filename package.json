@@ -6,7 +6,7 @@
   "scripts": {
     "start": "nodemon -r esm Voupon.js",
     "build": "babel cv.js -d build",
-    "docs": "apidoc -f .js -i ./ -e node_modules -o ./docs",
+    "docs": "apidoc -f .js -i ./ -e node_modules -o ./assets/docs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

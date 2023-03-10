@@ -6,6 +6,7 @@ import {
   VENDORS_COUPONS,
 } from "../ds/conn";
 import { generate_random_string } from "../functions";
+import { user } from "./users";
 import { reset_vendor_id } from "./voucher";
 
 const new_coupon = (req, res) => {
@@ -99,6 +100,7 @@ const premium_coupon_obtained = (req, res) => {
     coupon_code,
     user,
     vendor: coupon.vendor,
+    quantities: coupon.quantities,
   };
 
   let result = USER_COUPONS.write(user_coupon);
@@ -133,10 +135,6 @@ const search_coupons = (req, res) => {
   });
 };
 
-const retrieve_coupon = (req, res) => {
-  verify_coupon(req, res, true);
-};
-
 const applied_coupon = (req, res) => {
   let { coupon, user } = req.body;
 
@@ -157,12 +155,46 @@ const applied_coupon = (req, res) => {
     COUPONS.update(coupon, { quantities: { $dec: 1 } });
   else if (coupon.startWith("user_coupons"))
     USER_COUPONS.update({ _id: coupon, user }, { quantities: { $dec: 1 } });
+  else
+    return res.json({
+      ok: false,
+      message: "Invalid coupon type",
+      data: { message: "Invalid coupon type" },
+    });
 
   res.json({
     ok: true,
     message: "coupon applied",
     data: { success: true, coupon },
   });
+};
+
+/**
+ * @api {post} /retrieve_coupon Retrieve Coupon to new value of your merchandise
+ * @apiName RetrivedCoupon
+ * @apiGroup Coupons
+ * @apiDescription Fetch coupon details
+ * @apiBody {String} coupon_code Coupon Code
+ * @apiBody {String} vendor Vendor ID
+ * @apiBody {String} email Coupon user email
+ * @apiBody {String} type Coupon Type, can be either `open` or `premium`
+ *
+ * @apiSuccessExample {json} Successful Response:
+ * {
+ *  ok: true,
+ *  data: {
+ *    coupon: {
+ *      user: "users~vKGMrOTFgF24p5dMZYq~1676454919457",
+ *      value: 12,
+ *      _id: "coupons~dy62P4W6Sa92L02YCF~1677750283500",
+ *    },
+ *   }
+ * }
+ *
+ */
+
+const retrieve_coupon = (req, res) => {
+  verify_coupon(req, res, true);
 };
 
 const verify_coupon = (req, res, minimal = false) => {
@@ -197,7 +229,7 @@ const verify_coupon = (req, res, minimal = false) => {
     data: minimal
       ? {
           coupon: {
-            user: coupon.user,
+            user: user && user._id,
             value: coupon.coupon.value,
             coupon_id: coupon.coupon._id,
             _id: coupon._id,
