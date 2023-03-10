@@ -154,7 +154,7 @@ const applied_coupon = (req, res) => {
   if (coupon.startWith("coupon"))
     COUPONS.update(coupon, { quantities: { $dec: 1 } });
   else if (coupon.startWith("user_coupons"))
-    USER_COUPONS.update({ _id: coupon, user }, { quantities: { $dec: 1 } });
+    USER_COUPONS.update({ coupon, user }, { quantities: { $dec: 1 } });
   else
     return res.json({
       ok: false,
@@ -170,10 +170,10 @@ const applied_coupon = (req, res) => {
 };
 
 /**
- * @api {post} /retrieve_coupon Retrieve Coupon to new value of your merchandise
+ * @api {post} /retrieve_coupon Retrieve Coupon
  * @apiName RetrivedCoupon
  * @apiGroup Coupons
- * @apiDescription Fetch coupon details
+ * @apiDescription Fetch coupon details to calculate the new value of your merchandise
  * @apiBody {String} coupon_code Coupon Code
  * @apiBody {String} vendor Vendor ID
  * @apiBody {String} email Coupon user email

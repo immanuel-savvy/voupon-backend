@@ -400,7 +400,7 @@ const can_redeem_voucher = (
  * @apiDescription To redeem a voucher, you ought to have generated a One-Time Password from the /request_voucher_otp endpoint
  *
  * @apiBody {string} voucher_code Voucher Code
- * @apiBody {string} voucher_type Voucher Type [offer_voucher | open_voucher]
+ * @apiBody {string} voucher_type Voucher Type [`offer_voucher` | `open_voucher`]
  * @apiBody {number} otp Voucher One-Time Password
  * @apiBody {string} bank Bank.code from /get_banks endpoint
  * @apiBody {string} account_number Account number to deposit voucher value into
@@ -565,9 +565,9 @@ const redeem_voucher = (req, res) => {
  * @apiDescription Once this is called, an OTP is generated and sent to the authorised email linked to the voucher, the user is to return this OTP for verification.
  *
  * @apiBody {String} voucher_code Voucher Code
- * @apiBody {String} voucher_type Voucher Type [offer_voucher | open_voucher]
+ * @apiBody {String} voucher_type Voucher Type [`offer_voucher` | `open_voucher`]
  * @apiBody {String} email User email linked to voucher
- * @apiBody {String} [value] Only required if voucher_type is open_voucher
+ * @apiBody {String} [value] Only required if voucher_type is `open_voucher`
  *
  * @apiSuccessExample {json} Success Response:
  *  {
@@ -646,7 +646,7 @@ const request_voucher_otp = (req, res) => {
  * @apiBody {Number} otp Voucher one time password; You must have queried the /request_voucher_otp to provide to OTP to the user email
  * @apiBody {String} destination_email New user email to be used voucher's authorised email
  * @apiBody {String} owner Current email linked to voucher
- * @apiBody {String} voucher_type [offer_voucher | open_voucher]
+ * @apiBody {String} voucher_type [`offer_voucher` | `open_voucher`]
  * @apiBody {String} voucher Voucher returned from success response of /request_voucher_otp
  *
  * @apiSuccessExample {json} Successful-Response:
