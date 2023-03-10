@@ -43,10 +43,17 @@ const voucher_otp = new Object();
 const parse_vendor_id = (vendor_id) => {
   vendor_id = vendor_id.split("~");
   vendor_id.splice(0, 1);
-  vendor_id.unshift(vendor_id[2].slice(0, 5));
-  vendor_id[2] = vendor_id[2].slice(5);
+  vendor_id.unshift(vendor_id[1].slice(5));
+  vendor_id[2] = vendor_id[2].slice(0, 5);
 
   return vendor_id.join("$");
+};
+
+const reset_vendor_id = (vendor_id) => {
+  vendor_id = vendor_id.split("$");
+  vendor_id = ["vendors", vendor_id[1], `${vendor_id[2]}${vendor_id[0]}`];
+
+  return vendor_id.join("~");
 };
 
 const vendor_id = (req, res) => {
@@ -82,7 +89,7 @@ const create_offer_voucher = (req, res) => {
 
   res.json({
     ok: true,
-    message: "offer voucher",
+    message: "offer_voucher",
     data: voucher,
   });
 };
@@ -240,7 +247,7 @@ const create_open_voucher = (req, res) => {
 
   res.json({
     ok: true,
-    message: "open voucher",
+    message: "open_voucher",
     data: result,
   });
 };
@@ -282,28 +289,30 @@ const user_vouchers = (req, res) => {
 const can_redeem_voucher = (req, res, minimal = false) => {
   let { voucher_code, vendor, email, amount, user, voucher_type } = req.body;
 
+  voucher_type = voucher_type && voucher_type.replace(/ /g, "_");
+
   if (!user && !email) {
     return res.json({
-      ok: true,
+      ok: false,
       data: { message: "No user credentials found!" },
     });
   }
   if (!user && email) {
     user = USERS.readone({ email });
     if (!user)
-      return res.json({ ok: true, data: { message: "User not found" } });
+      return res.json({ ok: false, data: { message: "User not found" } });
 
     user = user._id;
   }
 
-  if (!new Array("open voucher", "offer voucher").includes(voucher_type))
+  if (!new Array("open_voucher", "offer_voucher").includes(voucher_type))
     return res.json({
       ok: false,
       data: { message: "Voucher type is invalid" },
     });
 
   let voucher = (
-    voucher_type === "offer voucher" ? USER_VOUCHERS : OPEN_VOUCHERS
+    voucher_type === "offer_voucher" ? USER_VOUCHERS : OPEN_VOUCHERS
   ).readone({ user, voucher_code });
 
   if (!voucher)
@@ -313,7 +322,7 @@ const can_redeem_voucher = (req, res, minimal = false) => {
       data: { message: "Voucher not found" },
     });
 
-  if (voucher_type === "offer voucher") {
+  if (voucher_type === "offer_voucher") {
     if (vendor && voucher.voucher.vendor._id !== vendor) {
       return res.json({
         ok: false,
@@ -334,10 +343,15 @@ const can_redeem_voucher = (req, res, minimal = false) => {
       });
     if (Number(amount) > 0 && voucher.voucher.value < Number(amount))
       return res.json({
-        ok: true,
+        ok: false,
         data: {
           message: `Voucher has insufficient balance, Available balance is - ${voucher.voucher.value}`,
         },
+      });
+    else if (Number(amount) && Number(amount) < 0)
+      return res.json({
+        ok: false,
+        data: { message: "Invalid amount data" },
       });
     if (voucher.state && voucher.state !== "unused") {
       return res.json({
@@ -379,7 +393,7 @@ const can_redeem_voucher = (req, res, minimal = false) => {
  * @apiBody {string} voucher_code Voucher Code
  * @apiBody {string} voucher_type Voucher Type [offer_voucher | open_voucher]
  * @apiBody {number} otp Voucher One-Time Password
- * @apiBody {string} bank Bank ID from /get_banks endpoint
+ * @apiBody {string} bank Bank.code from /get_banks endpoint
  * @apiBody {string} account_number Account number to deposit voucher value into
  * @apiBody {string} email Registered email of user whose voucher it is
  *
@@ -414,7 +428,7 @@ const redeem_voucher = (req, res) => {
   }
 
   voucher = (
-    voucher_type === "open voucher" ? OPEN_VOUCHERS : USER_VOUCHERS
+    voucher_type === "open_voucher" ? OPEN_VOUCHERS : USER_VOUCHERS
   ).readone(!voucher ? { voucher_code, user } : { _id: voucher, user });
 
   if (Number(otp) !== Number(voucher_otp[voucher._id]))
@@ -434,7 +448,9 @@ const redeem_voucher = (req, res) => {
 
   voucher = voucher.voucher;
   let { value } = voucher;
-  if (!voucher) return res.json({ ok: false });
+  if (!voucher) return res.json({ ok: false, message: "voucher not found" });
+  if (voucher.state !== "unused")
+    res.json({ ok: false, message: "voucher is not unused" });
 
   if (!email) {
     email = USERS.readone(user);
@@ -480,9 +496,9 @@ const redeem_voucher = (req, res) => {
         .then((result) => {
           result = result.data;
 
-          if (voucher_type === "open voucher")
+          if (voucher_type === "open_voucher")
             VOUCHERS.update(voucher._id, { redeemed: true, state: "redeemed" });
-          (voucher_type === "offer voucher"
+          (voucher_type === "offer_voucher"
             ? USER_VOUCHERS
             : OPEN_VOUCHERS
           ).update({ user, _id }, { state: "redeemed" });
@@ -532,6 +548,29 @@ const redeem_voucher = (req, res) => {
     .catch((err) => console.log(err, "H#$#"));
 };
 
+/**
+ * @api {post} /request_voucher_otp Generate Voucher OTP
+ * @apiName RequestVoucherOTP
+ * @apiGroup Vouchers
+ *
+ * @apiDescription Once this is called, an OTP is generated and sent to the authorised email linked to the voucher, the user is to return this OTP for verification.
+ *
+ * @apiBody {String} voucher_code Voucher Code
+ * @apiBody {String} voucher_type Voucher Type [offer_voucher | open_voucher]
+ * @apiBody {String} email User email linked to voucher
+ *
+ * @apiSuccessExample {json} Success Response:
+ *  {
+ *     "ok": true,
+ *     "message": "voucher otp sent",
+ *     "data": {
+ *       "voucher": "user_vouchers~xMexATpLEj03Z~1678358344593",
+ *       "email": "immanuelsavvy@gmail.com",
+ *       "user": "users~DuqM6Sef1vqIofd5n~1675764912550"
+ *     }
+ *   }
+ *
+ */
 const request_voucher_otp = (req, res) => {
   let { voucher, voucher_code, user, voucher_type, email } = req.body;
 
@@ -544,7 +583,7 @@ const request_voucher_otp = (req, res) => {
 
   let code = generate_random_string(6, "num");
   voucher = (
-    voucher_type === "open voucher" ? OPEN_VOUCHERS : USER_VOUCHERS
+    voucher_type === "open_voucher" ? OPEN_VOUCHERS : USER_VOUCHERS
   ).readone({ user, voucher_code });
 
   if (!voucher) return res.json({ ok: false });
@@ -578,26 +617,51 @@ const request_voucher_otp = (req, res) => {
   });
 };
 
+/**
+ * @api {post} /transfer_voucher Transfer Voucher Ownership
+ * @apiName TransferVoucher
+ * @apiGroup Vouchers
+ *
+ * @apiDescription Transfer voucher ownership from one user to another.
+ *
+ * @apiBody {Number} otp Voucher one time password; You must have queried the /request_voucher_otp to provide to OTP to the user email
+ * @apiBody {String} destination_email New user email to be used voucher's authorised email
+ * @apiBody {String} owner Current email linked to voucher
+ * @apiBody {String} voucher_type [offer_voucher | open_voucher]
+ * @apiBody {String} voucher Voucher returned from success response of /request_voucher_otp
+ *
+ * @apiSuccessExample {json} Successful-Response:
+ *  {
+ *    ok: true,
+ *    message: "transfer voucher",
+ *    data: {
+ *      voucher: "user_vouchers~eccevnivnwiioieiwcw~239485020201",
+ *      transferred: true,
+ *    },
+ *  }
+ */
 const transfer_voucher = (req, res) => {
   let details = req.body;
 
-  let { otp, email2, user, owner, voucher_type, voucher } = details;
+  let { otp, email2, user, destination_email, owner, voucher_type, voucher } =
+    details;
+  email2 = email2 || destination_email;
 
   if (Number(otp) !== Number(voucher_otp[voucher]))
     return res.json({
-      ok: true,
+      ok: false,
       message: "voucher otp verification",
       data: { message: "Invalid OTP code" },
     });
 
   let Voucher =
-    voucher_type === "offer voucher" ? USER_VOUCHERS : OPEN_VOUCHERS;
+    voucher_type === "offer_voucher" ? USER_VOUCHERS : OPEN_VOUCHERS;
   let user_voucher = Voucher.remove({ _id: voucher, user: owner });
 
   user_voucher.user = user;
   Voucher.write(user_voucher);
 
-  voucher_type === "open voucher" &&
+  voucher_type === "open_voucher" &&
     VOUCHERS.update(user_voucher.voucher, { email: email2, user });
 
   res.json({
@@ -617,7 +681,7 @@ const verify_voucher = (req, res) => {
   user = (user && user._id) || user;
 
   let voucher = (
-    voucher_type === "offer voucher" ? USER_VOUCHERS : OPEN_VOUCHERS
+    voucher_type === "offer_voucher" ? USER_VOUCHERS : OPEN_VOUCHERS
   ).readone({ user, voucher_code });
 
   res.json({
@@ -648,8 +712,43 @@ const close_voucher = (req, res) => {
   });
 };
 
+/**
+ * @api {post} /use_voucher Use Voucher
+ * @apiName Use Voucher
+ * @apiGroup Vouchers
+ *
+ * @apiDescription Calling the endpoint, would cause the value of a voucher to be transfered to the stated vendor, provided the call returned a successful response.
+ *
+ * @apiBody {String} voucher Voucher
+ * @apiBody {Number} [value] Only required if voucher is an Open Voucher
+ * @apiBody {String} user Owner of said voucher
+ * @apiBody {Number} otp Voucher One-Time-Password
+ * 
+ * @apiSuccessExample {json} Response-Success:
+ * {
+    ok: true,
+    message: "vouchers just got used",
+    data: { 
+      success: true, 
+      voucher: "voucher~9niDNQ1JNUnu~2394201191", 
+      vendor: "vendors~p39iDNQiDJNUnu~2394201128", 
+      user: "users~uniDNQiDJNUnu~23942012635"
+    },
+  }
+ */
 const use_voucher = (req, res) => {
-  let { vendor, voucher, value, user } = req.body;
+  let { vendor, otp, voucher, value, user } = req.body;
+
+  if (!vendor) {
+    vendor = req.header.vendor_id;
+
+    if (opt && Number(otp) !== voucher_otp[voucher])
+      return res.json({
+        ok: false,
+        message: "voucher otp registeration failed",
+        data: { otp, voucher },
+      });
+  }
 
   voucher = (
     voucher.startsWith("user") ? USER_VOUCHERS : OPEN_VOUCHERS
@@ -709,6 +808,8 @@ export {
   request_voucher_otp,
   transfer_voucher,
   close_voucher,
+  parse_vendor_id,
+  reset_vendor_id,
   use_voucher,
   vendor_id,
 };
