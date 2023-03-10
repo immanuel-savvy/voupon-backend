@@ -51,6 +51,7 @@ import {
   close_voucher,
   create_offer_voucher,
   create_open_voucher,
+  generate_voucher_otp,
   get_offer_vouchers,
   offer_vouchers,
   open_vouchers,
@@ -164,6 +165,7 @@ const router = (app) => {
   app.post("/vendor_coupons/:vendor", vendor_coupons);
 
   app.post("/transactions", transactions);
+  app.post("/generate_voucher_otp", generate_voucher_otp);
 
   app.post("/verify_voucher_for_transaction", (req, res) =>
     can_redeem_voucher(req, res, true)

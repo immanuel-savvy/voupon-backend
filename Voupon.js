@@ -12,9 +12,14 @@ app.use(express.static(__dirname + "/assets"));
 app.use(bodyParser.urlencoded({ extended: true, limit: "100mb" }));
 app.use(bodyParser.json({ limit: "100mb" }));
 
-app.use((req, res) => {
-  if (req.header.vendor_id)
+app.use((req, res, next) => {
+  if (req.header.vendor_id) {
     req.header.vendor_id = reset_vendor_id(req.header.vendor_id);
+    req.body.vendor = req.header.vendor_id;
+    console.log(req.body.vendor);
+  }
+
+  next();
 });
 
 router(app);
