@@ -156,7 +156,14 @@ const applied_coupon = (req, res) => {
       message: "what coupon?",
       data: { message: "Coupon field is missing" },
     });
-  if (!user && !coupon.startWith("coupon"))
+  if (typeof coupon !== "string")
+    return res.json({
+      ok: false,
+      message: "Invalid coupon field type",
+      data: coupon,
+    });
+
+  if (!user && !coupon.startsWith("coupon"))
     return res.json({
       ok: false,
       message: "coupon user missing",
@@ -188,7 +195,7 @@ const applied_coupon = (req, res) => {
  * @apiDescription Fetch coupon details to calculate the new value of your merchandise
  * @apiBody {String} coupon_code Coupon Code
  * @apiBody {String} vendor Vendor ID
- * @apiBody {String} email Coupon user email
+ * @apiBody {String} email Coupon user email, required if coupon_type is `premium`
  * @apiBody {String} type Coupon Type, can be either `open` or `premium`
  *
  * @apiSuccessExample {json} Successful Response:
@@ -212,20 +219,33 @@ const retrieve_coupon = (req, res) => {
 const verify_coupon = (req, res, minimal = false) => {
   let { coupon_code, vendor, email, type } = req.body;
 
+  if (!vendor)
+    return res.json({
+      ok: false,
+      data: { message: "Vendor ID is required to retrieve coupons" },
+    });
+
   let coupon;
   if (type === "open") {
     coupon = COUPONS.readone({ coupon_code });
-  } else {
+  } else if (type === "premium") {
     let user = USERS.readone({ email });
     if (!user)
       return res.json({ ok: false, data: { message: "User not found" } });
 
     coupon = USER_COUPONS.readone({ user: user._id, coupon_code });
-  }
+  } else
+    return res.json({ ok: false, data: { message: "Invalid coupon type" } });
+
+  if (!coupon)
+    return res.json({ ok: false, data: { message: "Coupon not found!" } });
 
   if (vendor) {
     if (vendor.includes("$")) vendor = reset_vendor_id(vendor);
-    if (coupon.coupon.vendor._id !== vendor)
+    if (
+      (type === "open" ? coupon.vendor._id : coupon.coupon.vendor._id) !==
+      vendor
+    )
       return res.json({
         ok: false,
         message: "coupon does not belong with vendor",
@@ -236,13 +256,18 @@ const verify_coupon = (req, res, minimal = false) => {
   if (!coupon)
     return res.json({ ok: false, data: { message: "Coupon not found" } });
 
+  if (minimal && type === "open") coupon = { coupon };
+  coupon.coupon.value = Number(coupon.coupon.value);
+
   res.json({
     ok: true,
     data: minimal
       ? {
           coupon: {
+            type,
             user: user && user._id,
             value: coupon.coupon.value,
+            unit: "percentage",
             coupon_id: coupon.coupon._id,
             _id: coupon._id,
           },
