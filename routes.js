@@ -86,6 +86,16 @@ import {
   new_reply,
   replies,
 } from "./handlers/comments";
+import {
+  can_redeem_ticket,
+  create_event,
+  events,
+  event_tickets,
+  request_ticket_otp,
+  ticket_purchased,
+  user_tickets,
+  vendor_events,
+} from "./handlers/tickets";
 
 const router = (app) => {
   app.get("/user/:user_id", user);
@@ -174,6 +184,15 @@ const router = (app) => {
   app.post("/verify_voucher_for_transaction", (req, res) =>
     can_redeem_voucher(req, res, true)
   );
+
+  app.post("/events", events);
+  app.post("/create_event", create_event);
+  app.post("/vendor_events", vendor_events);
+  app.post("/user_tickets", user_tickets);
+  app.post("/event_tickets", event_tickets);
+  app.post("/ticket_purchased", ticket_purchased);
+  app.post("/request_ticket_otp", request_ticket_otp);
+  app.post("/can_redeem_ticket", can_redeem_ticket);
 };
 
 export default router;

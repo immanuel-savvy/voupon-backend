@@ -17,11 +17,17 @@ let USERS,
   VENDORS,
   TRUSTEES,
   PURCHASED_VOUCHERS,
+  PURCHASED_TICKETS,
   REDEEMED_VOUCHERS,
   COMMENTS,
   REPLIES,
   USER_VOUCHERS,
   COUPONS,
+  EVENTS,
+  TICKETS,
+  USER_TICKETS,
+  EVENT_TICKETS,
+  VENDOR_EVENTS,
   VENDORS_COUPONS,
   USER_COUPONS,
   USERS_HASH;
@@ -50,8 +56,14 @@ const ds_conn = () => {
 
   REDEEMED_VOUCHERS = gds.folder("redeemed_vouchers");
 
+  TICKETS = gds.folder("tickets");
+  EVENT_TICKETS = gds.folder("event_tickets", "event", "user");
+  EVENTS = gds.folder("events", null, "vendor");
+  VENDOR_EVENTS = gds.folder("vendor_events", "vendor", "event");
+  USER_TICKETS = gds.folder("user_tickets", "user", "ticket");
   USER_VOUCHERS = gds.folder("user_vouchers", "user", "voucher");
   TRUSTEES = gds.folder("trustees");
+  PURCHASED_TICKETS = gds.folder("purchased_tickets", null, "event");
   PURCHASED_VOUCHERS = gds.folder("purchased_vouchers", null, "voucher");
   CONTACT_MESSAGES = gds.folder("contact_messages", null, "interest");
 };
@@ -65,18 +77,24 @@ export {
   COUPONS,
   VENDORS_COUPONS,
   GLOBALS,
+  EVENT_TICKETS,
+  EVENTS,
+  USER_TICKETS,
   PURCHASED_VOUCHERS,
   REDEEMED_VOUCHERS,
   USER_COUPONS,
+  VENDOR_EVENTS,
   COMMENTS,
   OFFER_VOUCHERS,
   WALLETS,
+  TICKETS,
   TRANSACTIONS,
   REPLIES,
   CONTACT_MESSAGES,
   VOUCHERS,
   TRUSTEES,
   OPEN_VOUCHERS,
+  PURCHASED_TICKETS,
   FAQS,
   VENDORS,
   USER_VOUCHERS,

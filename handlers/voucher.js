@@ -581,7 +581,6 @@ const redeem_voucher = (req, res) => {
  *   }
  *
  */
-
 const generate_voucher_otp = (req, res) => {
   let proceed = can_redeem_voucher({ body: req.body }, res, true, true);
 
@@ -644,7 +643,7 @@ const request_voucher_otp = (req, res) => {
  * @apiDescription Transfer voucher ownership from one user to another.
  *
  * @apiBody {Number} otp Voucher one time password; You must have queried the /request_voucher_otp to provide to OTP to the user email
- * @apiBody {String} destination_email New user email to be used voucher's authorised email
+ * @apiBody {String} destination_email New user email to be used as voucher's authorised email
  * @apiBody {String} owner Current email linked to voucher
  * @apiBody {String} voucher_type [`offer_voucher` | `open_voucher`]
  * @apiBody {String} voucher Voucher returned from success response of /request_voucher_otp
@@ -757,7 +756,6 @@ const close_voucher = (req, res) => {
  */
 const use_voucher = (req, res) => {
   let { vendor, otp, voucher, value, user } = req.body;
-  console.log(req.body);
 
   if (!vendor) {
     vendor = req.header.vendor_id;
@@ -765,7 +763,7 @@ const use_voucher = (req, res) => {
     if (vendor && !vendor.startsWith("vendor"))
       vendor = reset_vendor_id(vendor);
   }
-  console.log(otp, voucher_otp[voucher], voucher_otp);
+
   if (otp && Number(otp) !== voucher_otp[voucher])
     return res.json({
       ok: false,
