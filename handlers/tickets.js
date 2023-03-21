@@ -150,7 +150,7 @@ const event_tickets = (req, res) => {
   res.json({ ok: true, message: "event tickets", data: tickets });
 };
 
-const can_redeem_ticket = (req, res) => {
+const can_transact_ticket = (req, res) => {
   let { ticket_code, vendor, user, email } = req.body;
 
   if (!user && !email) {
@@ -172,7 +172,7 @@ const can_redeem_ticket = (req, res) => {
   if (!ticket)
     return res.json({
       ok: false,
-      message: "cannot redeem ticket",
+      message: "cannot transact ticket",
       data: { message: "Ticket not found" },
     });
 
@@ -190,9 +190,9 @@ const can_redeem_ticket = (req, res) => {
 
   res.json({
     ok: true,
-    message: "can redeem ticket",
+    message: "can transact ticket",
     data: {
-      can_redeem: true,
+      can_transact: true,
       ticket_code: ticket.ticket_code,
       user,
       vendor: ticket.vendor,
@@ -348,6 +348,6 @@ export {
   event_tickets,
   use_ticket,
   verify_ticket,
-  can_redeem_ticket,
+  can_transact_ticket,
   user_tickets,
 };

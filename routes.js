@@ -89,7 +89,7 @@ import {
   replies,
 } from "./handlers/comments";
 import {
-  can_redeem_ticket,
+  can_transact_ticket,
   create_event,
   events,
   event_tickets,
@@ -200,7 +200,7 @@ const router = (app) => {
   app.post("/event_tickets", event_tickets);
   app.post("/ticket_purchased", ticket_purchased);
   app.post("/request_ticket_otp", request_ticket_otp);
-  app.post("/can_redeem_ticket", can_redeem_ticket);
+  app.post("/can_transact_ticket", can_transact_ticket);
   app.post("/use_ticket", use_ticket);
   app.post("/verify_ticket", verify_ticket);
   app.post("/upcoming_events/:limit", upcoming_events);
