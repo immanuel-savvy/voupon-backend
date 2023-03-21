@@ -150,6 +150,28 @@ const event_tickets = (req, res) => {
   res.json({ ok: true, message: "event tickets", data: tickets });
 };
 
+/**
+ * @api {post} /can_transact_ticket Check Ticket's Transactable
+ * @apiName CanTransactTicket
+ * @apiGroup Tickets
+ * @apiDescription Check if ticket is transactable before proceeding to exchange value for it.
+ * @apiBody {string} ticket_code Ticket Code
+ * @apiBody {string} vendor Vendor ID
+ * @apiBody {string} email User email whose ticket it is.
+ * @apiSuccessExample {json} Successful Response:
+ * {
+ *    "ok":true,
+ *    "message":"can transact ticket",
+ *    "data":{
+ *      "can_transact":true,
+ *      "ticket_code":"LCVOYCF",
+ *      "user":"users~TctMXYZ2eBOAkhA3Q4I~1677750613595",
+ *      "vendor":"vendors~TctMJJABOAkhA3Q4I~1677750613515",
+ *      "event":"events~TctMprsteBOAkhA3Q4I~1677750603505"
+ *    }
+ * }
+ *
+ */
 const can_transact_ticket = (req, res) => {
   let { ticket_code, vendor, user, email } = req.body;
 
@@ -201,6 +223,25 @@ const can_transact_ticket = (req, res) => {
   });
 };
 
+/**
+ * @api {post} /request_ticket_otp Authorise Ticket Usage
+ * @apiName Request Ticket OTP
+ * @apiGroup Tickets
+ * @apiDescription Authorise access to ticket usage, by generating a One-Time password sent to owner's email
+ * @apiBody {string} ticket_code Ticket Code
+ * @apiBody {string} email Authorised email that ticket was purchased with.
+ * @apiSuccessExample {json} Successful Response:
+ * {
+ *    "ok":true,
+ *    "message":"ticket otp sent",
+ *    "data":{
+ *      "ticket":"tickets~TctMAG2eBOAkhA3Q4I~1677750613505",
+ *      "email":"useremail@mailbox.com",
+ *      "user":"users~TctMAG2eBOAkhA3QAD~1677750614508",
+ *      "event":"events~TctMAG2eBOAkhA3Q4I~1677750613592"
+ *    }
+ * }
+ */
 const request_ticket_otp = (req, res) => {
   let { ticket_code, user, email } = req.body;
 
@@ -246,8 +287,30 @@ const request_ticket_otp = (req, res) => {
   });
 };
 
+/**
+ * @api {post} /use_ticket Use Ticket
+ * @apiName Use Ticket
+ * @apiGroup Tickets
+ * @apiDescription Call this endpoint to transfer ticket's value to vendor's wallet.
+ * @apiBody {string} vendor Vendor ID
+ * @apiBody {string} otp One-Time password genereted from the `/request_ticket_otp` endpoint
+ * @apiBody {string} ticket Ticket ID being used
+ * @apiBody {string} user User ID as returned from the `/request_ticket_otp` endpoint
+ * @apiSuccessExample {json} Successful Response:
+ * {
+ *    "ok":true,
+ *    "message":"ticket used",
+ *    "data":{
+ *      "success":true,
+ *      "ticket":"tickets~TctMAG2eBOAkhA3Q4I~1677750613505",
+ *      "vendor":"vendors~TctMAG2eBOAkhA3KKL~1677750613691",
+ *      "user": {user_object}
+ *    }
+ * }
+ */
+
 const use_ticket = (req, res) => {
-  let { vendor, event, otp, ticket, user } = req.body;
+  let { vendor, otp, ticket, user } = req.body;
 
   if (!vendor) vendor = req.header.vendor_id;
   else {
@@ -281,7 +344,7 @@ const use_ticket = (req, res) => {
     ticket_code: ticket.ticket_code,
     value,
     credit: true,
-    data: event,
+    data: ticket.event._id,
   };
 
   TRANSACTIONS.write(tx);
@@ -291,11 +354,15 @@ const use_ticket = (req, res) => {
   TRANSACTIONS.write(tx);
 
   USER_TICKETS.update({ user, ticket: ticket._id }, { state: "used" });
-  EVENT_TICKETS.update({ ticket: ticket._id, event }, { state: "used" });
+  EVENT_TICKETS.update(
+    { ticket: ticket._id, event: ticket.event._id },
+    { state: "used" }
+  );
   ticket = TICKETS.update({ _id: ticket._id }, { state: "used" });
 
   res.json({
     ok: true,
+    message: "ticket used",
     data: { success: true, ticket, vendor, user: USERS.readone(user) },
   });
 };
