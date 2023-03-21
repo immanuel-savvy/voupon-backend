@@ -1,4 +1,11 @@
-import { GLOBALS, TRANSACTIONS, USERS, VENDORS, WALLETS } from "../ds/conn";
+import {
+  ACCOUNTS,
+  GLOBALS,
+  TRANSACTIONS,
+  USERS,
+  VENDORS,
+  WALLETS,
+} from "../ds/conn";
 import { vendor_verified } from "./emails";
 import { GLOBAL_pending_vendors } from "./starter";
 import { send_mail } from "./users";
@@ -152,6 +159,30 @@ const vendor_wallet = (req, res) => {
   });
 };
 
+const accounts = (req, res) => {
+  let { wallet } = req.params;
+
+  res.json({
+    ok: true,
+    message: "wallet account",
+    data: ACCOUNTS.read({ wallet }),
+  });
+};
+
+const add_account = (req, res) => {
+  let details = req.body;
+
+  let result = ACCOUNTS.write(details);
+
+  if (result)
+    res.json({
+      ok: true,
+      message: "add account",
+      data: { _id: result._id, created: result.created },
+    });
+  else res.json({ ok: false, data: { message: "cannot add account" } });
+};
+
 export {
   request_to_become_a_vendor,
   vendor,
@@ -161,4 +192,6 @@ export {
   vendors,
   vendors_by_category,
   vendor_wallet,
+  accounts,
+  add_account,
 };

@@ -38,6 +38,8 @@ import {
 import { admin_login, create_admin, get_admins, stats } from "./handlers/admin";
 
 import {
+  accounts,
+  add_account,
   close_vendor_account,
   request_to_become_a_vendor,
   unverified_vendors,
@@ -64,7 +66,7 @@ import {
   verify_voucher,
   voucher_purchased,
 } from "./handlers/voucher";
-import { get_banks, transactions } from "./handlers/wallets";
+import { get_banks, transactions, withdraw_wallet } from "./handlers/wallets";
 import {
   applied_coupon,
   coupons,
@@ -93,8 +95,11 @@ import {
   event_tickets,
   request_ticket_otp,
   ticket_purchased,
+  upcoming_events,
   user_tickets,
+  use_ticket,
   vendor_events,
+  verify_ticket,
 } from "./handlers/tickets";
 
 const router = (app) => {
@@ -115,6 +120,7 @@ const router = (app) => {
   app.get("/user_vouchers/:user", user_vouchers);
   app.get("/user_coupons/:user", user_coupons);
   app.get("/get_banks", get_banks);
+  app.get("/accounts/:wallet", accounts);
 
   app.post("/request_to_become_a_vendor", request_to_become_a_vendor);
   app.post("/verify_vendor/:vendor", verify_vendor);
@@ -168,6 +174,8 @@ const router = (app) => {
   app.post("/replies", replies);
 
   app.post("/vendor_id", vendor_id);
+  app.post("/add_account", add_account);
+  app.post("/withdraw_wallet", withdraw_wallet);
 
   app.post("/coupons", coupons);
   app.post("/new_coupon", new_coupon);
@@ -193,6 +201,9 @@ const router = (app) => {
   app.post("/ticket_purchased", ticket_purchased);
   app.post("/request_ticket_otp", request_ticket_otp);
   app.post("/can_redeem_ticket", can_redeem_ticket);
+  app.post("/use_ticket", use_ticket);
+  app.post("/verify_ticket", verify_ticket);
+  app.post("/upcoming_events/:limit", upcoming_events);
 };
 
 export default router;

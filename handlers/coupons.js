@@ -17,6 +17,7 @@ const new_coupon = (req, res) => {
     coupon_code = generate_random_string(7, "alpha").toUpperCase();
     coupon.coupon_code = coupon_code;
   }
+  coupon.quantities = Number(coupon.quantities) || 0;
   let result = COUPONS.write(coupon);
 
   VENDORS_COUPONS.write({ vendor: coupon.vendor, coupon: result._id });
@@ -84,7 +85,7 @@ const premium_coupon_obtained = (req, res) => {
   if (typeof coupon.duration === "number" && coupon.duration < Date.now()) {
     return res.json({ ok: false, data: { message: "Coupon already expired" } });
   }
-  if (coupon.usage >= coupon.quantities)
+  if (coupon.usage >= Number(coupon.quantities))
     return res.json({
       ok: false,
       data: { message: "Coupon have reached max usage" },
@@ -100,7 +101,7 @@ const premium_coupon_obtained = (req, res) => {
     coupon_code,
     user,
     vendor: coupon.vendor,
-    quantities: coupon.quantities,
+    quantities: Number(coupon.quantities),
   };
 
   let result = USER_COUPONS.write(user_coupon);
@@ -150,6 +151,8 @@ const search_coupons = (req, res) => {
 const applied_coupon = (req, res) => {
   let { coupon, user } = req.body;
 
+  console.log(coupon, user);
+
   if (!coupon)
     return res.json({
       ok: false,
@@ -170,9 +173,9 @@ const applied_coupon = (req, res) => {
       data: { coupon },
     });
 
-  if (coupon.startWith("coupon"))
+  if (coupon.startsWith("coupon"))
     COUPONS.update(coupon, { quantities: { $dec: 1 } });
-  else if (coupon.startWith("user_coupons"))
+  else if (coupon.startsWith("user_coupons"))
     USER_COUPONS.update({ coupon, user }, { quantities: { $dec: 1 } });
   else
     return res.json({

@@ -764,7 +764,7 @@ const use_voucher = (req, res) => {
       vendor = reset_vendor_id(vendor);
   }
 
-  if (otp && Number(otp) !== voucher_otp[voucher])
+  if (!otp || Number(otp) !== voucher_otp[voucher])
     return res.json({
       ok: false,
       message: "voucher otp registration failed",
@@ -793,6 +793,7 @@ const use_voucher = (req, res) => {
     voucher_code: voucher.voucher_code,
     value,
     credit: true,
+    data: voucher._id,
   };
 
   TRANSACTIONS.write(tx);

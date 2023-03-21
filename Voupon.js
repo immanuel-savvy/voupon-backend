@@ -28,6 +28,10 @@ app.get("/", (req, res) =>
   res.send("<div><h1>Hi, its Voupon Africa.</h1></div>")
 );
 
+app.get("/developer", (req, res) => {
+  res.sendfile("assets/docs/index.html");
+});
+
 app.listen(1449, () => {
   ds_conn();
 
