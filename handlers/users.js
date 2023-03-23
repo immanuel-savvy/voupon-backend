@@ -1,4 +1,4 @@
-import { USERS, USERS_HASH, WALLETS } from "../ds/conn";
+import { USERS, USERS_HASH } from "../ds/conn";
 import nodemailer from "nodemailer";
 import { generate_random_string } from "generalised-datastore/utils/functions";
 import { verification } from "./emails";
@@ -28,17 +28,21 @@ const send_mail = ({
   to,
 }) => {
   let transporter;
+
+  text = text || "";
+  html = html || "";
+  sender = "voucherafrica@digitaladplanet.com";
+  sender_name = sender_name || "Voucher Africa";
+
   try {
     transporter = nodemailer.createTransport({
-      host: "66.29.137.48" || "udaralinksapp.com",
+      host: "mail.digitaladplanet.com",
+      name: "digitaladplanet.com",
       port: 465,
       secure: true,
-      tls: {
-        servername: "udaralinksapp.com",
-      },
       auth: {
         user: sender,
-        pass: sender_pass,
+        pass: "voucherdigiadplanet",
       },
     });
 
@@ -54,7 +58,7 @@ const send_mail = ({
         text,
         html,
       })
-      .then(() => {})
+      .then((res) => {})
       .catch((e) => console.log(e));
     console.log("Email sent", recipient);
   } catch (e) {}

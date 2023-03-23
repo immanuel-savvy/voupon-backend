@@ -5,6 +5,7 @@ import router from "./routes";
 import bodyParser from "body-parser";
 import { create_default_admin } from "./handlers/starter";
 import { reset_vendor_id } from "./handlers/voucher";
+import { send_mail } from "./handlers/users";
 
 const app = express();
 app.use(cors());
@@ -29,7 +30,7 @@ app.get("/", (req, res) =>
 );
 
 app.get("/developer", (req, res) => {
-  res.sendfile("assets/docs/index.html");
+  res.sendFile(__dirname + "/assets/docs/index.html");
 });
 
 app.listen(1449, () => {

@@ -236,7 +236,7 @@ const can_transact_ticket = (req, res) => {
  *    "message":"ticket otp sent",
  *    "data":{
  *      "ticket":"tickets~TctMAG2eBOAkhA3Q4I~1677750613505",
- *      "email":"useremail@mailbox.com",
+ *      "email":"example@mail.com",
  *      "user":"users~TctMAG2eBOAkhA3QAD~1677750614508",
  *      "event":"events~TctMAG2eBOAkhA3Q4I~1677750613592"
  *    }
