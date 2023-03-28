@@ -19,7 +19,6 @@ const to_title = (string) => {
 const send_mail = ({
   recipient,
   recipient_name,
-  sender_pass,
   sender_name,
   sender,
   subject,

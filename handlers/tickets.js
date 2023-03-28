@@ -58,7 +58,8 @@ const events = (req, res) => {
 
 const ticket_purchased = (req, res) => {
   let details = req.body;
-  let { user, email } = details;
+  let { user, email, quantity } = details;
+  quantity = quantity || 1;
 
   let firstname, lastname;
   if (!user) {
@@ -112,6 +113,7 @@ const ticket_purchased = (req, res) => {
     vendor: details.vendor,
     ticket_code,
     value: event.value,
+    quantity,
     credit: true,
   };
 

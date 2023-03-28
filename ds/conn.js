@@ -34,7 +34,12 @@ let USERS,
   USERS_HASH;
 
 const ds_conn = () => {
-  gds = new GDS("voupon").sync();
+  gds = new GDS(
+    "voupon",
+    process.env["PWD"].includes("www")
+      ? process.env["PWD"].split("/").slice(0, -1).join("/")
+      : null
+  ).sync();
 
   USERS = gds.folder("users");
   VENDORS = gds.folder("vendors");

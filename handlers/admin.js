@@ -1,9 +1,9 @@
 import { ADMINSTRATORS, ADMIN_HASH, GLOBALS, VENDORS } from "../ds/conn";
 import { GLOBAL_pending_vendors } from "./starter";
 
-const domain_name = "https://api.voupon.com";
+const domain_name = "https://dev.voucherafrica.com:2555";
 
-const client_domain = "http://voupon.com";
+const client_domain = "http://voucherafrica.com";
 
 const paystack_secret_key = "sk_test_8f53d8f0d9303a18a856d4aeba97603d0795fdcb";
 

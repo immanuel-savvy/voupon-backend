@@ -26,7 +26,7 @@ app.use((req, res, next) => {
 router(app);
 
 app.get("/", (req, res) =>
-  res.send("<div><h1>Hi, its Voupon Africa.</h1></div>")
+  res.send("<div><h1>Hi, its Voucher Africa.</h1></div>")
 );
 
 app.get("/developer", (req, res) => {
