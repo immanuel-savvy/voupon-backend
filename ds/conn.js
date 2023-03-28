@@ -66,7 +66,7 @@ const ds_conn = () => {
 
   REDEEMED_VOUCHERS = gds.folder("redeemed_vouchers");
 
-  TICKETS = gds.folder("tickets");
+  TICKETS = gds.folder("tickets", null, "event");
   EVENT_TICKETS = gds.folder("event_tickets", "event", "user");
   EVENTS = gds.folder("events", null, "vendor");
   VENDOR_EVENTS = gds.folder("vendor_events", "vendor", "event");

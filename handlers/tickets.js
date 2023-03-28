@@ -59,7 +59,7 @@ const events = (req, res) => {
 const ticket_purchased = (req, res) => {
   let details = req.body;
   let { user, email, quantity } = details;
-  quantity = quantity || 1;
+  quantity = Number(quantity || 1);
 
   let firstname, lastname;
   if (!user) {
@@ -71,39 +71,64 @@ const ticket_purchased = (req, res) => {
     user = user._id;
   }
 
-  let ticket_code = generate_random_string(6, "alpha").toUpperCase();
+  let ticket_code = new Array();
+  for (let i = 0; i < quantity; i++)
+    ticket_code.push(generate_random_string(6, "alpha").toUpperCase());
 
   let event = EVENTS.update(
     { _id: details.event },
     {
-      total_sales: { $inc: 1 },
-      quantity: { $dec: 1 },
+      total_sales: { $inc: quantity },
+      quantity: { $dec: quantity },
     }
   );
 
-  let ticket = {
-    ticket_code,
-    event: event._id,
-    user,
-  };
-  let ticket_res = TICKETS.write(ticket);
-  ticket._id = ticket_res._id;
-  ticket.created = ticket_res.created;
+  let ticket, ticket_res;
 
-  EVENT_TICKETS.write({
-    ticket: ticket._id,
-    user,
-    event: event._id,
-    ticket_code,
-  });
+  let user_ticket = USER_TICKETS.readone({ user, event: event._id });
+  if (user_ticket) {
+    USER_TICKETS.update(
+      { user, _id: user_ticket._id },
+      { ticket_code: { $push: ticket_code }, quantity: { $inc: quantity } }
+    );
+    EVENT_TICKETS.update(
+      { ticket: user_ticket.ticket._id, event: event._id },
+      { ticket_code: { $push: ticket_code }, quantity: { $inc: quantity } }
+    );
+    ticket_res = TICKETS.update(
+      { user, event: event._id },
+      { ticket_code: { $push: ticket_code }, quantity: { $inc: quantity } }
+    );
+  } else {
+    ticket = {
+      ticket_code,
+      quantity,
+      event: event._id,
+      user,
+      used_codes: new Array(),
+    };
 
-  USER_TICKETS.write({
-    ticket_code,
-    vendor: details.vendor,
-    event: event._id,
-    ticket: ticket._id,
-    user,
-  });
+    ticket_res = TICKETS.write(ticket);
+    ticket._id = ticket_res._id;
+    ticket.created = ticket_res.created;
+
+    EVENT_TICKETS.write({
+      ticket: ticket._id,
+      user,
+      event: event._id,
+      ticket_code,
+      quantity,
+    });
+
+    USER_TICKETS.write({
+      ticket_code,
+      vendor: details.vendor,
+      quantity,
+      event: event._id,
+      ticket: ticket._id,
+      user,
+    });
+  }
 
   let tx = {
     event: details.event,
@@ -206,6 +231,12 @@ const can_transact_ticket = (req, res) => {
       data: { message: "ticket does not belong to vendor" },
     });
 
+  if (ticket.used_codes && ticket.used_codes.includes(ticket_code))
+    return res.json({
+      ok: false,
+      data: { message: `Ticket code has been used` },
+    });
+
   if (ticket.state && ticket.state !== "unused")
     return res.json({
       ok: false,
@@ -261,7 +292,7 @@ const request_ticket_otp = (req, res) => {
 
   let { _id } = ticket;
 
-  ticket_otp[ticket._id] = Number(code);
+  ticket_otp[`${ticket._id}${ticket_code}`] = Number(code);
 
   let { firstname, lastname } = USERS.readone(user);
 
@@ -276,9 +307,6 @@ const request_ticket_otp = (req, res) => {
     recipient: email,
     recipient_name: `${firstname} ${lastname}`,
     subject: "[Voucher Africa] Ticket OTP",
-    sender: "signup@udaralinksapp.com",
-    sender_name: "Voucher Africa",
-    sender_pass: "signupudaralinks",
     html: voucher_otp_email({ ...ticket, code }),
   });
 
@@ -297,6 +325,7 @@ const request_ticket_otp = (req, res) => {
  * @apiBody {string} vendor Vendor ID
  * @apiBody {string} otp One-Time password genereted from the `/request_ticket_otp` endpoint
  * @apiBody {string} ticket Ticket ID being used
+ * @apiBody {string} ticket_code Ticket Code being used
  * @apiBody {string} user User ID as returned from the `/request_ticket_otp` endpoint
  * @apiSuccessExample {json} Successful Response:
  * {
@@ -305,6 +334,7 @@ const request_ticket_otp = (req, res) => {
  *    "data":{
  *      "success":true,
  *      "ticket":"tickets~TctMAG2eBOAkhA3Q4I~1677750613505",
+ *      "ticket_code":"XYZABC",
  *      "vendor":"vendors~TctMAG2eBOAkhA3KKL~1677750613691",
  *      "user": {user_object}
  *    }
@@ -312,7 +342,7 @@ const request_ticket_otp = (req, res) => {
  */
 
 const use_ticket = (req, res) => {
-  let { vendor, otp, ticket, user } = req.body;
+  let { vendor, otp, ticket, ticket_code, user } = req.body;
 
   if (!vendor) vendor = req.header.vendor_id;
   else {
@@ -320,7 +350,7 @@ const use_ticket = (req, res) => {
       vendor = reset_vendor_id(vendor);
   }
 
-  if (!otp || Number(otp) !== ticket_otp[ticket])
+  if (!otp || Number(otp) !== ticket_otp[`${ticket}${ticket_code}`])
     return res.json({
       ok: false,
       message: "ticket otp registration failed",
@@ -343,7 +373,7 @@ const use_ticket = (req, res) => {
     type: "ticket",
     title: "ticket used",
     vendor: vendor._id,
-    ticket_code: ticket.ticket_code,
+    ticket_code,
     value,
     credit: true,
     data: ticket.event._id,
@@ -355,17 +385,29 @@ const use_ticket = (req, res) => {
   tx.credit = false;
   TRANSACTIONS.write(tx);
 
-  USER_TICKETS.update({ user, ticket: ticket._id }, { state: "used" });
+  USER_TICKETS.update(
+    { user, ticket: ticket._id },
+    { used_codes: { $push: ticket_code } }
+  );
   EVENT_TICKETS.update(
     { ticket: ticket._id, event: ticket.event._id },
-    { state: "used" }
+    { used_codes: { $push: ticket_code } }
   );
-  ticket = TICKETS.update({ _id: ticket._id }, { state: "used" });
+  ticket = TICKETS.update(
+    { _id: ticket._id },
+    { used_codes: { $push: ticket_code } }
+  );
 
   res.json({
     ok: true,
     message: "ticket used",
-    data: { success: true, ticket, vendor, user: USERS.readone(user) },
+    data: {
+      success: true,
+      ticket,
+      ticket_code,
+      vendor,
+      user: USERS.readone(user),
+    },
   });
 };
 
@@ -387,12 +429,20 @@ const verify_ticket = (req, res) => {
       },
     });
 
+  console.log(user_ticket);
   let ticket = TICKETS.readone(user_ticket.ticket);
+  console.log(ticket);
+
+  if (ticket && ticket.used_codes && ticket.used_codes.includes(ticket_code))
+    ticket.state = "used";
+
+  ticket.ticket_code = new Array(ticket_code);
+  console.log(ticket);
 
   res.json({
     ok: true,
     message: "verify ticket",
-    data: { ticket, verified: true, state: user_ticket.state },
+    data: { ticket, verified: true, state: ticket && ticket.state },
   });
 };
 
