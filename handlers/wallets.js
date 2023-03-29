@@ -5,6 +5,13 @@ import { voucher_redeemed_email } from "./emails";
 import { send_mail } from "./users";
 import { Paystack_private_key } from "./utils";
 
+const rewards = new Object({
+  referral_signup: 2000,
+  signup: 1000,
+  annual_subscription: 10000,
+  daily_reward_claim: 50,
+});
+
 const transactions = (req, res) => {
   let { user, wallet, limit, skip } = req.body;
 
@@ -146,4 +153,4 @@ const withdraw_wallet = (req, res) => {
     .catch((err) => console.log(err, "H#$#"));
 };
 
-export { transactions, get_banks, withdraw_wallet };
+export { transactions, get_banks, withdraw_wallet, rewards };

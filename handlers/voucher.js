@@ -49,12 +49,20 @@ const parse_vendor_id = (vendor_id) => {
   return vendor_id.join("$");
 };
 
-const reset_vendor_id = (vendor_id) => {
+const reset_vendor_id = (vendor_id, folder) => {
   vendor_id = vendor_id.split("$");
-  vendor_id = ["vendors", vendor_id[1], `${vendor_id[2]}${vendor_id[0]}`];
+  vendor_id = [
+    folder || "vendors",
+    vendor_id[1],
+    `${vendor_id[2]}${vendor_id[0]}`,
+  ];
 
   return vendor_id.join("~");
 };
+
+const mask_id = (_id) => parse_vendor_id(_id);
+
+const unmask_id = (_id, folder) => _id && reset_vendor_id(_id, folder);
 
 const vendor_id = (req, res) => {
   let { email } = req.body;
@@ -835,4 +843,6 @@ export {
   use_voucher,
   vendor_id,
   generate_voucher_otp,
+  unmask_id,
+  mask_id,
 };

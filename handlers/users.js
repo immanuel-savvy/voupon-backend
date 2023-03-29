@@ -1,8 +1,10 @@
-import { USERS, USERS_HASH } from "../ds/conn";
+import { TRANSACTIONS, USERS, USERS_HASH, WALLETS } from "../ds/conn";
 import nodemailer from "nodemailer";
 import { generate_random_string } from "generalised-datastore/utils/functions";
 import { verification } from "./emails";
 import { remove_image, save_image } from "./utils";
+import { unmask_id } from "./voucher";
+import { rewards } from "./wallets";
 
 let email_verification_codes = new Object();
 
@@ -91,6 +93,38 @@ const signup = (req, res) => {
     let result = USERS.write(user);
     user._id = result._id;
     user.created = result.created;
+
+    let wallet = WALLETS.write({ user: user._id });
+    user.wallet = wallet._id;
+    USERS.update(user._id, { wallet: wallet._id });
+
+    if (user.referral) {
+      user.referral = unmask_id(user.referral, "users");
+
+      let referral_user = USERS.readone(user.referral);
+      WALLETS.update(referral_user.wallet, {
+        reward_token: { $inc: rewards.referral_signup },
+      });
+
+      let tx = {
+        type: "reward_token",
+        user: referral_user._id,
+        title: "Referred User Signup",
+        value: rewards.referral_signup,
+        wallet: referral_user.wallet,
+      };
+      TRANSACTIONS.write(tx);
+    }
+
+    let tx = {
+      type: "reward_token",
+      user: referral_user._id,
+      title: "Welcome Token",
+      value: rewards.signup,
+      wallet: user.wallet,
+    };
+    TRANSACTIONS.write(tx);
+    WALLETS.update(wallet._id, { reward_token: { $inc: rewards.signup } });
 
     USERS_HASH.write({ user: user._id, key });
   }
@@ -192,7 +226,69 @@ const login = (req, res) => {
       data: "Invalid password",
     });
 
+  if (!user.wallet) {
+    let wallet_res = WALLETS.write({
+      user: user._id,
+    });
+    USERS.update(user._id, { wallet: wallet_res._id });
+  }
+
   res.json({ ok: true, message: "user logged-in", data: user });
+};
+
+const premium_user_subscription = (req, res) => {
+  let { user } = req.params;
+
+  let date = Date.now();
+  user = USERS.update(user, { premium: date });
+
+  WALLETS.update(user.wallet, {
+    reward_token: { $inc: rewards.annual_subscription },
+  });
+
+  let tx = {
+    type: "reward_token",
+    user: user._id,
+    title: "Annual Subscription Reward Token",
+    value: rewards.annual_subscription,
+    wallet: user.wallet,
+  };
+  TRANSACTIONS.write(tx);
+
+  res.json(
+    user
+      ? {
+          ok: true,
+          message: "Premium user subscription successful",
+          data: { date, user: user._id },
+        }
+      : {
+          ok: false,
+          message:
+            "Couldn't find user, Please contact our customer support at voucherafrica@digitaladplanet.com to rectify any charges incur.",
+        }
+  );
+};
+
+const claim_daily_reward_token = (req, res) => {
+  let { user } = req.params;
+
+  user = USERS.readone(user);
+
+  WALLETS.update(user.wallet, {
+    reward_token: { $inc: rewards.daily_reward_claim },
+  });
+
+  let tx = {
+    type: "reward_token",
+    user: user._id,
+    title: "Daily Reward Token",
+    value: rewards.daily_reward_claim,
+    wallet: user.wallet,
+  };
+  TRANSACTIONS.write(tx);
+
+  res.end();
 };
 
 export {
@@ -204,4 +300,6 @@ export {
   verify_email,
   to_title,
   update_user,
+  premium_user_subscription,
+  claim_daily_reward_token,
 };

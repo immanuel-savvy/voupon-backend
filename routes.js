@@ -1,5 +1,7 @@
 import {
+  claim_daily_reward_token,
   login,
+  premium_user_subscription,
   signup,
   update_user,
   user,
@@ -134,6 +136,8 @@ const router = (app) => {
 
   app.post("/signup", signup);
   app.post("/login", login);
+  app.post("/premium_user_subscription/:user", premium_user_subscription);
+  app.post("/claim_daily_reward_token/:user", claim_daily_reward_token);
   app.post("/user_by_email", user_by_email);
   app.post("/verify_email", verify_email);
   app.post("/create_admin", create_admin);
