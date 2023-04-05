@@ -11,6 +11,7 @@ import {
   WALLETS,
 } from "../ds/conn";
 import { voucher_otp_email, voucher_purchased_email } from "./emails";
+import { default_wallet } from "./starter";
 import { send_mail } from "./users";
 import { save_image } from "./utils";
 import { reset_vendor_id } from "./voucher";
@@ -364,26 +365,45 @@ const use_ticket = (req, res) => {
 
   let value = Number(ticket.event.value);
 
-  WALLETS.update(vendor.wallet, { tickets: { $inc: value } });
+  let vendor_value = value * (value * 0.05);
+  WALLETS.update(vendor.wallet, { tickets: { $inc: vendor_value } });
 
   let tx = {
     wallet: vendor.wallet,
-    ticket: ticket._id,
+    voucher: ticket._id,
     customer: user,
     type: "ticket",
     title: "ticket used",
     vendor: vendor._id,
-    ticket_code,
-    value,
+    voucher_code: ticket.voucher_code,
+    value: vendor_value,
     credit: true,
-    data: ticket.event._id,
+    data: ticket._id,
   };
 
   TRANSACTIONS.write(tx);
-  delete tx.wallet;
-  tx.user = user;
+  tx.value = value;
+  tx.wallet = USERS.readone(user).wallet;
   tx.credit = false;
   TRANSACTIONS.write(tx);
+
+  WALLETS.update(default_wallet, {
+    balance: { $inc: value - vendor_value },
+    total_earnings: { $inc: value - vendor_value },
+  });
+
+  TRANSACTIONS.write({
+    credit: true,
+    value: value - vendor_value,
+    voucher_code: ticket.voucher_code,
+    title: "Offer Voucher Sales Commission",
+    wallet: default_wallet,
+    type: "ticket",
+    user,
+    ticket: ticket._id,
+  });
+
+  WALLETS.update(vendor.wallet, { tickets: { $inc: value } });
 
   USER_TICKETS.update(
     { user, ticket: ticket._id },

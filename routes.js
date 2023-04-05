@@ -62,6 +62,7 @@ import {
   redeem_voucher,
   request_voucher_otp,
   transfer_voucher,
+  update_voucher,
   user_vouchers,
   use_voucher,
   vendor_id,
@@ -127,8 +128,9 @@ const router = (app) => {
   app.post("/request_to_become_a_vendor", request_to_become_a_vendor);
   app.post("/verify_vendor/:vendor", verify_vendor);
   app.post("/voucher_purchased", voucher_purchased);
+  app.post("/update_voucher", update_voucher);
   app.post("/create_open_voucher", create_open_voucher);
-  app.post("/can_redeem_voucher", can_redeem_voucher);
+  app.post("/can_redeem_voucher", (req, res) => can_redeem_voucher(req, res));
   app.post("/redeem_voucher", redeem_voucher);
   app.post("/transfer_voucher", transfer_voucher);
   app.post("/request_voucher_otp", request_voucher_otp);

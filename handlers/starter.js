@@ -5,10 +5,12 @@ import {
   GLOBALS,
   USERS,
   USERS_HASH,
+  WALLETS,
 } from "../ds/conn";
 
 let default_admin = "adminstrators~123voupon~1234567890123",
-  default_user = "users~123voupon~1234567890123";
+  default_user = "users~123voupon~1234567890123",
+  default_wallet;
 
 const GLOBAL_newsletter = "newsletter",
   GLOBAL_unseen_messages = "contact_messages",
@@ -26,7 +28,8 @@ const create_default_admin = () => {
     ADMIN_HASH.write({ admin: default_admin, key: "adminstrator#1" });
   }
 
-  if (!USERS.readone(default_user)) {
+  let user_ = USERS.readone(default_user);
+  if (!user_) {
     USERS.write({
       _id: default_user,
       firstname: "Voupon",
@@ -35,6 +38,11 @@ const create_default_admin = () => {
       email: "vouponafrica@gmail.com",
     });
     USERS_HASH.write({ user: default_user, key: "adminstrator#1" });
+  } else if (!user_.wallet) {
+    let wallet = WALLETS.write({ user: default_user });
+
+    default_wallet = wallet._id;
+    USERS.update(default_user, { wallet: default_wallet });
   }
 
   !GLOBALS.readone({ global: GLOBAL_pending_vendors }) &&
@@ -147,4 +155,5 @@ export {
   contact_message_seen,
   GLOBAL_newsletter,
   GLOBAL_pending_vendors,
+  default_wallet,
 };

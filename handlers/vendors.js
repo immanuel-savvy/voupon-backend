@@ -102,9 +102,6 @@ const verify_vendor = (req, res) => {
       recipient: vendor.director.email,
       recipient_name: `${director_name}`,
       subject: "[Voucher Africa] Vendor Verified",
-      sender: "signup@udaralinksapp.com",
-      sender_name: "Voupon",
-      sender_pass: "signupudaralinks",
       html: vendor_verified(vendor),
     });
 
@@ -117,9 +114,6 @@ const verify_vendor = (req, res) => {
       recipient: email,
       recipient_name: `${name}`,
       subject: "[Voucher Africa] Vendor Verified",
-      sender: "signup@udaralinksapp.com",
-      sender_name: "Voupon",
-      sender_pass: "signupudaralinks",
       html: vendor_verified(vendor),
     });
   }

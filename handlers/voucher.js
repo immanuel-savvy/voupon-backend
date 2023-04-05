@@ -19,8 +19,10 @@ import {
   voucher_purchased_email,
   voucher_redeemed_email,
 } from "./emails";
+import { default_wallet } from "./starter";
 import { send_mail } from "./users";
-import { save_image, save_video } from "./utils";
+import { save_image } from "./utils";
+import { rewards } from "./wallets";
 
 /**
  * @api {post} /vendor_id Vendor ID
@@ -94,6 +96,8 @@ const create_offer_voucher = (req, res) => {
   let result = OFFER_VOUCHERS.write(voucher);
   voucher._id = result._id;
   voucher.created = result.created;
+
+  VENDORS.update(voucher.vendor, { vouchers: { $inc: 1 } });
 
   res.json({
     ok: true,
@@ -222,6 +226,51 @@ const voucher_purchased = (req, res) => {
   });
 };
 
+const voucher_creation_fees = (details) => {
+  let user = USERS.readone(details.user);
+  let fee = user.premium ? 50 : 100;
+  WALLETS.update(default_wallet, {
+    total_earning: { $inc: fee },
+    balance: { $inc: fee },
+  });
+
+  TRANSACTIONS.write({
+    wallet: default_wallet,
+    value: fee,
+    type: "voucher",
+    title: "Voucher Created",
+    user: user._id,
+    credit: true,
+  });
+
+  if (user.referral) {
+    let ref_fee = fee * 0.1;
+    let ref = USERS.readone(user._id);
+    WALLETS.update(ref.wallet, { balance: { $inc: ref_fee } });
+    TRANSACTIONS.write({
+      wallet: ref.wallet,
+      value: ref_fee,
+      type: "voucher",
+      title: "Affiliate Created Voucher",
+      user: ref._id,
+      credit: true,
+    });
+
+    WALLETS.update(default_wallet, {
+      balance: { $dec: ref_fee },
+      total_disburse: { $inc: ref_fee },
+    });
+
+    TRANSACTIONS.write({
+      wallet: default_wallet,
+      value: ref_fee,
+      type: "voucher",
+      title: "Paid out referral created voucher",
+      user: ref._id,
+    });
+  }
+};
+
 const create_open_voucher = (req, res) => {
   let details = req.body;
 
@@ -245,9 +294,10 @@ const create_open_voucher = (req, res) => {
     user: details.user,
   };
 
+  voucher_creation_fees(details);
   send_mail({
     recipient: details.email,
-    recipient_name: `${details.firstname} ${details.lastname}`,
+    recipient_name: `${user.firstname} ${user.lastname}`,
     subject: "[Voucher Africa] Voucher Purchased",
     sender: "signup@udaralinksapp.com",
     sender_name: "Voupon",
@@ -460,14 +510,17 @@ const redeem_voucher = (req, res) => {
 
   let { _id } = voucher;
   let user_ = USERS.readone(user);
-  let { firstname, lastname } = user_;
+  let { firstname, lastname, referral } = user_;
   email = email || user_.email;
 
   voucher = voucher.voucher;
   let { value } = voucher;
   if (!voucher) return res.json({ ok: false, message: "voucher not found" });
-  if (voucher.state !== "unused")
-    res.json({ ok: false, message: "voucher is not unused" });
+  if (voucher.state && voucher.state !== "unused")
+    return res.json({
+      ok: false,
+      data: { message: "Voucher is not `unused`" },
+    });
 
   if (!email) {
     email = USERS.readone(user);
@@ -495,6 +548,7 @@ const redeem_voucher = (req, res) => {
       result = result.data;
 
       let recipient = result.data.recipient_code;
+      value = Number(value);
 
       axios({
         url: "https://api.paystack.co/transfer",
@@ -506,7 +560,7 @@ const redeem_voucher = (req, res) => {
         },
         data: {
           source: "balance",
-          amount: Number(value) * 100,
+          amount: value - rewards.voucher_redeemed_fee,
           recipient,
         },
       })
@@ -515,10 +569,12 @@ const redeem_voucher = (req, res) => {
 
           if (voucher_type === "open_voucher")
             VOUCHERS.update(voucher._id, { redeemed: true, state: "redeemed" });
+
           (voucher_type === "offer_voucher"
             ? USER_VOUCHERS
             : OPEN_VOUCHERS
           ).update({ user, _id }, { state: "redeemed" });
+
           REDEEMED_VOUCHERS.write({
             voucher: voucher._id,
             transfer_details: {
@@ -538,19 +594,56 @@ const redeem_voucher = (req, res) => {
             title: "voucher redeemed",
             vendor: voucher.vendor,
             voucher_code: voucher_code,
-            value,
-            credit: true,
+            value: value - rewards.voucher_redeemed_fee,
+            wallet: USERS.readone(user).wallet,
           };
 
           TRANSACTIONS.write(tx);
+
+          let tx_fee = rewards.voucher_redeemed_fee;
+          if (referral) {
+            referral = USERS.readone(referral);
+
+            tx_fee = tx_fee - tx_fee * (referral.premium ? 0.2 : 0.1);
+          }
+
+          WALLETS.update(default_wallet, {
+            balance: { $inc: tx_fee },
+            total_earning: { $inc: tx_fee },
+          });
+          TRANSACTIONS.write({
+            voucher: _id,
+            type: "voucher",
+            user,
+            title: "voucher redeemed fee",
+            vendor: voucher.vendor,
+            voucher_code: voucher_code,
+            value: tx_fee,
+            wallet: default_wallet,
+          });
+
+          if (referral) {
+            let ref_fee = rewards.voucher_redeemed_fee - tx_fee;
+            WALLETS.update(referral.wallet, {
+              balance: { $inc: ref_fee },
+              vouchers: { $inc: ref_fee },
+            });
+            TRANSACTIONS.write({
+              voucher: _id,
+              type: "voucher",
+              user,
+              title: "voucher redeemed referral token",
+              vendor: voucher.vendor,
+              voucher_code: voucher_code,
+              value: ref_fee,
+              wallet: referral.wallet,
+            });
+          }
 
           send_mail({
             recipient: email,
             recipient_name: `${firstname} ${lastname}`,
             subject: "[Voucher Africa] Voucher Redeemed",
-            sender: "signup@udaralinksapp.com",
-            sender_name: "Voupon",
-            sender_pass: "signupudaralinks",
             html: voucher_redeemed_email({ ...details, voucher_code }),
           });
 
@@ -630,9 +723,6 @@ const request_voucher_otp = (req, res) => {
     recipient: email,
     recipient_name: `${firstname} ${lastname}`,
     subject: "[Voucher Africa] Voucher OTP",
-    sender: "signup@udaralinksapp.com",
-    sender_name: "Voupon",
-    sender_pass: "signupudaralinks",
     html: voucher_otp_email({ ...voucher, code }),
   });
 
@@ -789,7 +879,8 @@ const use_voucher = (req, res) => {
     voucher.voucher.vendor ? Number(voucher.voucher.value) : value
   );
 
-  WALLETS.update(vendor.wallet, { vouchers: { $inc: value } });
+  let vendor_value = value * (value * 0.05);
+  WALLETS.update(vendor.wallet, { vouchers: { $inc: vendor_value } });
 
   let tx = {
     wallet: vendor.wallet,
@@ -799,17 +890,32 @@ const use_voucher = (req, res) => {
     title: "voucher used",
     vendor: vendor._id,
     voucher_code: voucher.voucher_code,
-    value,
+    value: vendor_value,
     credit: true,
     data: voucher._id,
   };
 
   TRANSACTIONS.write(tx);
-  delete tx.wallet;
-  tx.user = user;
+  tx.value = value;
+  tx.wallet = USERS.readone(user).wallet;
   tx.credit = false;
   TRANSACTIONS.write(tx);
 
+  WALLETS.update(default_wallet, {
+    balance: { $inc: value - vendor_value },
+    total_earnings: { $inc: value - vendor_value },
+  });
+
+  TRANSACTIONS.write({
+    credit: true,
+    value: value - vendor_value,
+    voucher_code: voucher.voucher_code,
+    title: "Offer Voucher Sales Commission",
+    wallet: default_wallet,
+    type: "voucher",
+    user,
+    voucher: voucher._id,
+  });
   if (voucher.voucher.vendor) {
     USER_VOUCHERS.update({ user, _id: voucher._id }, { state: "used" });
 
@@ -824,6 +930,27 @@ const use_voucher = (req, res) => {
   });
 };
 
+const update_voucher = (req, res) => {
+  let voucher = req.body;
+
+  voucher.images = voucher.images.map((img) => {
+    img.url = save_image(img.url);
+
+    return img;
+  });
+
+  OFFER_VOUCHERS.update(
+    { _id: voucher._id, vendor: voucher.vendor },
+    { ...voucher }
+  );
+
+  res.json({
+    ok: true,
+    message: "offer_voucher",
+    data: voucher,
+  });
+};
+
 export {
   get_offer_vouchers,
   create_offer_voucher,
@@ -831,6 +958,7 @@ export {
   offer_vouchers,
   verify_voucher,
   open_vouchers,
+  update_voucher,
   voucher_purchased,
   user_vouchers,
   redeem_voucher,
