@@ -7,7 +7,7 @@ const new_comment = (req, res) => {
 
   res.json({
     ok: true,
-    message: "voucher comment",
+    message: "new comment",
     data: { _id: result._id, created: result.created },
   });
 };

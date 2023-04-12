@@ -39,6 +39,24 @@ const create_event = (req, res) => {
   });
 };
 
+const update_event = (req, res) => {
+  let event = req.body;
+
+  event.images = event.images.map((img) => {
+    img.url = save_image(img.url);
+
+    return img;
+  });
+
+  EVENTS.update({ _id: event._id, vendor: event.vendor }, { ...event });
+
+  res.json({
+    ok: true,
+    message: "event updated",
+    data: event,
+  });
+};
+
 const vendor_events = (req, res) => {
   let { vendor } = req.body;
 
@@ -489,4 +507,5 @@ export {
   verify_ticket,
   can_transact_ticket,
   user_tickets,
+  update_event,
 };

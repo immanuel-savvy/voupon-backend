@@ -21,15 +21,19 @@ let USERS,
   REDEEMED_VOUCHERS,
   COMMENTS,
   REPLIES,
+  PRODUCTS,
+  VENDOR_PRODUCTS,
   USER_VOUCHERS,
   COUPONS,
   EVENTS,
   TICKETS,
+  CARTS,
   USER_TICKETS,
   EVENT_TICKETS,
   VENDOR_EVENTS,
   VENDORS_COUPONS,
   USER_COUPONS,
+  WISHLIST,
   ACCOUNTS,
   USERS_HASH;
 
@@ -51,6 +55,8 @@ const ds_conn = () => {
   USERS_HASH = gds.folder("user_hash", "user");
   REVIEWS = gds.folder("reviews");
   FAQS = gds.folder("faqs");
+  PRODUCTS = gds.folder("products");
+  VENDOR_PRODUCTS = gds.folder("vendor_products", "vendor", "product");
   TRANSACTIONS = gds.folder(
     "transactions",
     "wallet",
@@ -65,6 +71,9 @@ const ds_conn = () => {
   REPLIES = gds.folder("replies", "comment");
 
   REDEEMED_VOUCHERS = gds.folder("redeemed_vouchers");
+
+  WISHLIST = gds.folder("wishlist", "user", "product");
+  CARTS = gds.folder("carts", "user", "product");
 
   TICKETS = gds.folder("tickets", null, "event");
   EVENT_TICKETS = gds.folder("event_tickets", "event", "user");
@@ -88,8 +97,10 @@ export {
   COUPONS,
   VENDORS_COUPONS,
   GLOBALS,
+  CARTS,
   EVENT_TICKETS,
   EVENTS,
+  WISHLIST,
   USER_TICKETS,
   PURCHASED_VOUCHERS,
   ACCOUNTS,
@@ -99,6 +110,8 @@ export {
   COMMENTS,
   OFFER_VOUCHERS,
   WALLETS,
+  PRODUCTS,
+  VENDOR_PRODUCTS,
   TICKETS,
   TRANSACTIONS,
   REPLIES,

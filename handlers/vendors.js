@@ -142,17 +142,6 @@ const close_vendor_account = (req, res) => {
   });
 };
 
-const vendor_wallet = (req, res) => {
-  let { vendor } = req.params;
-
-  vendor = VENDORS.readone(vendor);
-  res.json({
-    ok: true,
-    message: "vendor wallet",
-    data: WALLETS.readone(vendor.wallet),
-  });
-};
-
 const accounts = (req, res) => {
   let { wallet } = req.params;
 
@@ -185,7 +174,6 @@ export {
   close_vendor_account,
   vendors,
   vendors_by_category,
-  vendor_wallet,
   accounts,
   add_account,
 };

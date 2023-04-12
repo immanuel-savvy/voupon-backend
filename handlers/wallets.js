@@ -1,5 +1,5 @@
 import axios from "axios";
-import { TRANSACTIONS, USERS, VENDORS, WALLETS } from "../ds/conn";
+import { gds, TRANSACTIONS, USERS, VENDORS, WALLETS } from "../ds/conn";
 import { paystack_secret_key } from "./admin";
 import { voucher_redeemed_email } from "./emails";
 import { send_mail } from "./users";
@@ -155,4 +155,37 @@ const withdraw_wallet = (req, res) => {
     .catch((err) => console.log(err, "H#$#"));
 };
 
-export { transactions, get_banks, withdraw_wallet, rewards };
+const wallet = (req, res) => {
+  let { user } = req.body;
+
+  user = gds.get_folder_by_id(user).readone(user);
+
+  res.json({
+    ok: true,
+    message: "user wallet",
+    data: WALLETS.readone(user.wallet),
+  });
+};
+
+const topup = (req, res) => {
+  let { value, wallet } = req.body;
+
+  wallet = WALLETS.update(wallet, { balance: { $inc: value } });
+  if (!wallet) return res.end();
+
+  let tx = {
+    type: "balance",
+    user: wallet.user,
+    title: "Topup",
+    vendor: wallet.vendor,
+    value,
+    credit: true,
+    wallet: wallet._id,
+  };
+
+  TRANSACTIONS.write(tx);
+
+  res.json({ ok: false, message: "topup", data: { success: true, value } });
+};
+
+export { transactions, get_banks, withdraw_wallet, wallet, topup, rewards };

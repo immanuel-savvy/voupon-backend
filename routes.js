@@ -25,6 +25,7 @@ import {
   update_user_review,
   update_faq,
   post_about_statement,
+  search_query,
 } from "./handlers/sections";
 
 import {
@@ -47,7 +48,6 @@ import {
   unverified_vendors,
   vendor,
   vendors,
-  vendor_wallet,
   verify_vendor,
 } from "./handlers/vendors";
 import {
@@ -69,7 +69,13 @@ import {
   verify_voucher,
   voucher_purchased,
 } from "./handlers/voucher";
-import { get_banks, transactions, withdraw_wallet } from "./handlers/wallets";
+import {
+  get_banks,
+  topup,
+  transactions,
+  wallet,
+  withdraw_wallet,
+} from "./handlers/wallets";
 import {
   applied_coupon,
   coupons,
@@ -99,11 +105,18 @@ import {
   request_ticket_otp,
   ticket_purchased,
   upcoming_events,
+  update_event,
   user_tickets,
   use_ticket,
   vendor_events,
   verify_ticket,
 } from "./handlers/tickets";
+import {
+  add_to_wishlist,
+  create_product_et_service,
+  update_product,
+  vendor_products_et_service,
+} from "./handlers/marketplace";
 
 const router = (app) => {
   app.get("/user/:user_id", user);
@@ -114,7 +127,6 @@ const router = (app) => {
   app.get("/get_admins", get_admins);
   app.get("/stats", stats);
   app.get("/vendor/:vendor", vendor);
-  app.get("/vendor_wallet/:vendor", vendor_wallet);
   app.get("/vendors/:limit", vendors);
   app.get("/unverified_vendors", unverified_vendors);
   app.get("/offer_vouchers/:vendor", offer_vouchers);
@@ -182,6 +194,8 @@ const router = (app) => {
   app.post("/vendor_id", vendor_id);
   app.post("/add_account", add_account);
   app.post("/withdraw_wallet", withdraw_wallet);
+  app.post("/topup", topup);
+  app.post("/wallet", wallet);
 
   app.post("/coupons", coupons);
   app.post("/new_coupon", new_coupon);
@@ -201,6 +215,7 @@ const router = (app) => {
 
   app.post("/events", events);
   app.post("/create_event", create_event);
+  app.post("/update_event", update_event);
   app.post("/vendor_events", vendor_events);
   app.post("/user_tickets", user_tickets);
   app.post("/event_tickets", event_tickets);
@@ -210,6 +225,13 @@ const router = (app) => {
   app.post("/use_ticket", use_ticket);
   app.post("/verify_ticket", verify_ticket);
   app.post("/upcoming_events/:limit", upcoming_events);
+
+  app.post("/search_query", search_query);
+
+  app.post("/create_product_et_service", create_product_et_service);
+  app.post("/update_product", update_product);
+  app.post("/add_to_wishlist", add_to_wishlist);
+  app.post("/vendor_products_et_service/:vendor", vendor_products_et_service);
 };
 
 export default router;

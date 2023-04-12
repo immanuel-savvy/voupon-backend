@@ -1,4 +1,13 @@
-import { FAQS, GLOBALS, REVIEWS, TRUSTEES } from "../ds/conn";
+import {
+  COUPONS,
+  EVENTS,
+  FAQS,
+  GLOBALS,
+  OFFER_VOUCHERS,
+  REVIEWS,
+  TRUSTEES,
+  VENDORS,
+} from "../ds/conn";
 import { remove_image, remove_video, save_image, save_video } from "./utils";
 
 const GLOBAL_user_review = "user_review";
@@ -209,12 +218,34 @@ const update_faq = (req, res) => {
   });
 };
 
+const search_query = (req, res) => {
+  let { search_param } = req.body;
+
+  let vendors = VENDORS.read();
+  let offer_vouchers = OFFER_VOUCHERS.read(null, {
+    search_param,
+    subfolder: vendors.map((v) => v._id),
+  }).map((offer) => {
+    offer.vendor = vendors.find((v) => v._id === offer.vendor);
+
+    return offer;
+  });
+  vendors = VENDORS.read(null, { search_param });
+  let coupons = COUPONS.read(null, { search_param });
+  let events = EVENTS.read(null, { search_param });
+
+  let data = { coupons, events, vouchers: offer_vouchers, vendors };
+
+  res.json({ ok: true, message: "Search Result", data });
+};
+
 export {
   GLOBALS_about_statement,
   GLOBALS_verified_reviews,
   GLOBAL_user_review,
   reviews,
   faqs,
+  search_query,
   new_faq,
   remove_faq,
   update_faq,
