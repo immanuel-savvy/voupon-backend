@@ -166,8 +166,13 @@ const add_account = (req, res) => {
   else res.json({ ok: false, data: { message: "cannot add account" } });
 };
 
+const top_vendors = (req, res) => {
+  res.json({ ok: true, data: VENDORS.read(null, { limit: 10 }) });
+};
+
 export {
   request_to_become_a_vendor,
+  top_vendors,
   vendor,
   unverified_vendors,
   verify_vendor,

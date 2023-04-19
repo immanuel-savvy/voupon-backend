@@ -7,6 +7,7 @@ import {
   USERS_HASH,
   WALLETS,
 } from "../ds/conn";
+import { GLOBAL_pending_user_verification } from "./users";
 
 let default_admin = "adminstrators~123voupon~1234567890123",
   default_user = "users~123voupon~1234567890123",
@@ -47,6 +48,12 @@ const create_default_admin = () => {
 
   !GLOBALS.readone({ global: GLOBAL_pending_vendors }) &&
     GLOBALS.write({ global: GLOBAL_pending_vendors, vendors: new Array() });
+
+  !GLOBALS.readone({ global: GLOBAL_pending_user_verification }) &&
+    GLOBALS.write({
+      global: GLOBAL_pending_user_verification,
+      users: new Array(),
+    });
 };
 
 const subscribe_newsletter = (req, res) => {

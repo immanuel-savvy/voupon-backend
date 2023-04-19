@@ -1,8 +1,14 @@
-import { TRANSACTIONS, USERS, USERS_HASH, WALLETS } from "../ds/conn";
+import {
+  TRANSACTIONS,
+  USERS,
+  USERS_HASH,
+  USER_VERIFICATION_DETAILS,
+  WALLETS,
+} from "../ds/conn";
 import nodemailer from "nodemailer";
 import { generate_random_string } from "generalised-datastore/utils/functions";
-import { verification } from "./emails";
-import { remove_image, save_image } from "./utils";
+import { user_verified_email, verification } from "./emails";
+import { remove_image, save_file, save_image } from "./utils";
 import { unmask_id } from "./voucher";
 import { rewards } from "./wallets";
 import { default_wallet } from "./starter";
@@ -63,6 +69,16 @@ const send_mail = ({
       .catch((e) => console.log(e));
     console.log("Email sent", recipient);
   } catch (e) {}
+};
+
+const users = (req, res) => {
+  let { query, limit, skip } = req.body;
+
+  res.json({
+    ok: true,
+    message: "users",
+    data: USERS.read(query, { limit, skip }),
+  });
 };
 
 const signup = (req, res) => {
@@ -328,15 +344,103 @@ const claim_daily_reward_token = (req, res) => {
   res.end();
 };
 
+const GLOBAL_pending_user_verification = "pending_user_verifications";
+
+const user_verification_request = (req, res) => {
+  let documents = req.body;
+
+  let { ID, user, picture, picture_filename, ID_filename } = documents;
+  documents.picture = save_image(picture, picture_filename);
+  documents.ID = save_file(ID, ID_filename);
+
+  delete documents.picture_filename;
+  delete documents.ID_filename;
+
+  let result = USER_VERIFICATION_DETAILS.write(documents);
+  documents._id = result._id;
+  documents.created = result.created;
+
+  USERS.update(user, {
+    kyc_pending: "pending",
+    kyc_docs: documents._id,
+  });
+
+  GLOBALS.update(
+    { global: GLOBAL_pending_user_verification },
+    { users: { $push: user } }
+  );
+
+  res.json({
+    ok: true,
+    message: "user verification request sent",
+    data: documents,
+  });
+};
+
+const pending_user_verifications = (req, res) => {
+  let users = GLOBALS.readone({
+    global: GLOBAL_pending_user_verification,
+  }).users;
+
+  res.json({
+    ok: true,
+    message: "unverified users request",
+    data: {
+      users: USERS.read(users),
+      docs: USER_VERIFICATION_DETAILS.read(users.map((user) => user.kyc_docs)),
+    },
+  });
+};
+
+const verify_user = (req, res) => {
+  let { user } = req.params;
+
+  let c_user = USERS.readone(user);
+  if (!c_user)
+    return res.json({ ok: false, data: { message: "user not found" } });
+  else if (c_user.kyc_verified)
+    return res.json({ ok: true, data: { message: "user verified already" } });
+
+  GLOBALS.update(
+    { global: GLOBAL_pending_user_verification },
+    { users: { $splice: user } }
+  );
+  user = USERS.update(user, { kyc_verified: Date.now() });
+
+  if (user) {
+    let { firstname, lastname, email } = user;
+
+    let user_name = `${firstname} ${lastname}`;
+
+    send_mail({
+      recipient: email,
+      recipient_name: `${user_name}`,
+      subject: "[Voucher Africa] User Verified",
+      html: user_verified_email(user),
+    });
+  }
+
+  res.json({
+    ok: true,
+    message: "verify user",
+    data: { verified: !!(user && user.kyc_verified) },
+  });
+};
+
 export {
   signup,
   login,
   user_by_email,
   user,
+  GLOBAL_pending_user_verification,
+  user_verification_request,
+  pending_user_verifications,
+  verify_user,
   send_mail,
   verify_email,
   to_title,
   update_user,
   premium_user_subscription,
+  users,
   claim_daily_reward_token,
 };

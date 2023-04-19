@@ -85,10 +85,14 @@ const voucher_redeemed_email = (details) =>
 
 const voucher_otp_email = (details) => `<div>${JSON.stringify(details)}</div>`;
 
+const user_verified_email = (details) =>
+  `<div>${JSON.stringify(details)}</div>`;
+
 export {
   verification,
   voucher_purchased_email,
   generate_newsletter,
+  user_verified_email,
   user_generated,
   vendor_verified,
   voucher_redeemed_email,

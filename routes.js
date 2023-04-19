@@ -1,12 +1,16 @@
 import {
   claim_daily_reward_token,
   login,
+  pending_user_verifications,
   premium_user_subscription,
   signup,
   update_user,
   user,
+  users,
   user_by_email,
+  user_verification_request,
   verify_email,
+  verify_user,
 } from "./handlers/users";
 
 import {
@@ -45,6 +49,7 @@ import {
   add_account,
   close_vendor_account,
   request_to_become_a_vendor,
+  top_vendors,
   unverified_vendors,
   vendor,
   vendors,
@@ -114,8 +119,11 @@ import {
 import {
   add_to_wishlist,
   create_product_et_service,
+  products,
+  remove_from_wishlist,
   update_product,
   vendor_products_et_service,
+  wishlist,
 } from "./handlers/marketplace";
 
 const router = (app) => {
@@ -134,6 +142,7 @@ const router = (app) => {
   app.get("/get_offer_vouchers/:limit", get_offer_vouchers);
   app.get("/user_vouchers/:user", user_vouchers);
   app.get("/user_coupons/:user", user_coupons);
+  app.get("/top_vendors", top_vendors);
   app.get("/get_banks", get_banks);
   app.get("/accounts/:wallet", accounts);
 
@@ -150,6 +159,10 @@ const router = (app) => {
 
   app.post("/signup", signup);
   app.post("/login", login);
+  app.post("/users", users);
+  app.post("/verify_user", verify_user);
+  app.post("/pending_user_verifications", pending_user_verifications);
+  app.post("/user_verification_request", user_verification_request);
   app.post("/premium_user_subscription/:user", premium_user_subscription);
   app.post("/claim_daily_reward_token/:user", claim_daily_reward_token);
   app.post("/user_by_email", user_by_email);
@@ -231,6 +244,9 @@ const router = (app) => {
   app.post("/create_product_et_service", create_product_et_service);
   app.post("/update_product", update_product);
   app.post("/add_to_wishlist", add_to_wishlist);
+  app.post("/remove_from_wishlist", remove_from_wishlist);
+  app.post("/wishlist/:user", wishlist);
+  app.post("/products", products);
   app.post("/vendor_products_et_service/:vendor", vendor_products_et_service);
 };
 

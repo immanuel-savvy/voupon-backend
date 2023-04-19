@@ -35,6 +35,7 @@ let USERS,
   USER_COUPONS,
   WISHLIST,
   ACCOUNTS,
+  USER_VERIFICATION_DETAILS,
   USERS_HASH;
 
 const ds_conn = () => {
@@ -52,10 +53,11 @@ const ds_conn = () => {
   ADMINSTRATORS = gds.folder("adminstrators");
   ADMIN_HASH = gds.folder("admin_hash", "admin");
   GLOBALS = gds.folder("globals", "global");
+  USER_VERIFICATION_DETAILS = gds.folder("user_verification_details");
   USERS_HASH = gds.folder("user_hash", "user");
   REVIEWS = gds.folder("reviews");
   FAQS = gds.folder("faqs");
-  PRODUCTS = gds.folder("products");
+  PRODUCTS = gds.folder("products", null, "vendor");
   VENDOR_PRODUCTS = gds.folder("vendor_products", "vendor", "product");
   TRANSACTIONS = gds.folder(
     "transactions",
@@ -104,6 +106,7 @@ export {
   USER_TICKETS,
   PURCHASED_VOUCHERS,
   ACCOUNTS,
+  USER_VERIFICATION_DETAILS,
   REDEEMED_VOUCHERS,
   USER_COUPONS,
   VENDOR_EVENTS,

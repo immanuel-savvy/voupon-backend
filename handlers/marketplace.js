@@ -1,4 +1,4 @@
-import { PRODUCTS, VENDOR_PRODUCTS, WISHLIST } from "../ds/conn";
+import { PRODUCTS, VENDORS, VENDOR_PRODUCTS, WISHLIST } from "../ds/conn";
 import { save_image } from "./utils";
 
 const create_product_et_service = (req, res) => {
@@ -15,6 +15,8 @@ const create_product_et_service = (req, res) => {
 
   product._id &&
     VENDOR_PRODUCTS.write({ product: product._id, vendor: product.vendor });
+
+  VENDORS.update(product.vendor, { products: { $inc: 1 } });
 
   res.json({
     ok: true,
@@ -57,9 +59,29 @@ const vendor_products_et_service = (req, res) => {
 const add_to_wishlist = (req, res) => {
   let data = req.body;
 
-  !!WISHLIST.readone(data) ? WISHLIST.remove(data) : WISHLIST.write(data);
+  !!WISHLIST.readone(data) ? null : WISHLIST.write(data);
 
   res.end();
+};
+
+const remove_from_wishlist = (req, res) => {
+  let data = req.body;
+
+  WISHLIST.remove(data);
+
+  res.end();
+};
+
+const wishlist = (req, res) => {
+  let { user } = req.params;
+
+  res.json({ ok: true, data: WISHLIST.read({ user }) });
+};
+
+const products = (req, res) => {
+  let { skip, limit } = req.body;
+
+  res.json({ ok: true, data: PRODUCTS.read(null, { skip, limit }) });
 };
 
 export {
@@ -67,4 +89,7 @@ export {
   update_product,
   vendor_products_et_service,
   add_to_wishlist,
+  remove_from_wishlist,
+  products,
+  wishlist,
 };
