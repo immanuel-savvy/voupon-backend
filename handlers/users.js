@@ -1,4 +1,5 @@
 import {
+  GLOBALS,
   TRANSACTIONS,
   USERS,
   USERS_HASH,
@@ -361,7 +362,7 @@ const user_verification_request = (req, res) => {
   documents.created = result.created;
 
   USERS.update(user, {
-    kyc_pending: "pending",
+    kyc_verified: "pending",
     kyc_docs: documents._id,
   });
 
@@ -377,20 +378,16 @@ const user_verification_request = (req, res) => {
   });
 };
 
-const pending_user_verifications = (req, res) => {
-  let users = GLOBALS.readone({
-    global: GLOBAL_pending_user_verification,
-  }).users;
-
+const pending_user_verifications = (req, res) =>
   res.json({
     ok: true,
     message: "unverified users request",
-    data: {
-      users: USERS.read(users),
-      docs: USER_VERIFICATION_DETAILS.read(users.map((user) => user.kyc_docs)),
-    },
+    data: USERS.read(
+      GLOBALS.readone({
+        global: GLOBAL_pending_user_verification,
+      }).users
+    ),
   });
-};
 
 const verify_user = (req, res) => {
   let { user } = req.params;
@@ -398,7 +395,7 @@ const verify_user = (req, res) => {
   let c_user = USERS.readone(user);
   if (!c_user)
     return res.json({ ok: false, data: { message: "user not found" } });
-  else if (c_user.kyc_verified)
+  else if (Number(c_user.kyc_verified))
     return res.json({ ok: true, data: { message: "user verified already" } });
 
   GLOBALS.update(
@@ -427,6 +424,16 @@ const verify_user = (req, res) => {
   });
 };
 
+const user_kyc_doc = (req, res) => {
+  let { user } = req.params;
+
+  res.json({
+    ok: true,
+    message: "user kyc docs",
+    data: USER_VERIFICATION_DETAILS.readone(USERS.readone(user).kyc_docs),
+  });
+};
+
 export {
   signup,
   login,
@@ -439,6 +446,7 @@ export {
   send_mail,
   verify_email,
   to_title,
+  user_kyc_doc,
   update_user,
   premium_user_subscription,
   users,

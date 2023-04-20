@@ -19,6 +19,10 @@ let USERS,
   PURCHASED_VOUCHERS,
   PURCHASED_TICKETS,
   REDEEMED_VOUCHERS,
+  PRODUCT_SUBSCRIPTIONS,
+  VENDOR_SUBSCRIPTIONS,
+  USER_SUBSCRIPTIONS,
+  SUBCRIPTIONS,
   COMMENTS,
   REPLIES,
   PRODUCTS,
@@ -64,6 +68,7 @@ const ds_conn = () => {
     "wallet",
     new Array("data", "vendor", "customer")
   );
+
   WALLETS = gds.folder("wallets");
   VOUCHERS = gds.folder("vouchers", null, "vendor");
   COUPONS = gds.folder("coupons", null, "vendor");
@@ -88,6 +93,23 @@ const ds_conn = () => {
   PURCHASED_VOUCHERS = gds.folder("purchased_vouchers", null, "voucher");
   CONTACT_MESSAGES = gds.folder("contact_messages", null, "interest");
   ACCOUNTS = gds.folder("accounts", "wallet");
+
+  PRODUCT_SUBSCRIPTIONS = gds.folder(
+    "product_subscriptions",
+    "product",
+    "subscription"
+  );
+  VENDOR_SUBSCRIPTIONS = gds.folder(
+    "vendor_subscriptions",
+    "vendor",
+    new Array("subscription")
+  );
+  USER_SUBSCRIPTIONS = gds.folder("user_subscriptions", "user", "subscription");
+  SUBCRIPTIONS = gds.folder(
+    "subscriptions",
+    null,
+    new Array("product", "user")
+  );
 };
 
 export {
@@ -112,6 +134,10 @@ export {
   VENDOR_EVENTS,
   COMMENTS,
   OFFER_VOUCHERS,
+  PRODUCT_SUBSCRIPTIONS,
+  VENDOR_SUBSCRIPTIONS,
+  USER_SUBSCRIPTIONS,
+  SUBCRIPTIONS,
   WALLETS,
   PRODUCTS,
   VENDOR_PRODUCTS,

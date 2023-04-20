@@ -1,4 +1,16 @@
-import { PRODUCTS, VENDORS, VENDOR_PRODUCTS, WISHLIST } from "../ds/conn";
+import {
+  PRODUCTS,
+  PRODUCT_SUBSCRIPTIONS,
+  SUBCRIPTIONS,
+  TRANSACTIONS,
+  USERS,
+  USER_SUBSCRIPTIONS,
+  VENDORS,
+  VENDOR_PRODUCTS,
+  VENDOR_SUBSCRIPTIONS,
+  WALLETS,
+  WISHLIST,
+} from "../ds/conn";
 import { save_image } from "./utils";
 
 const create_product_et_service = (req, res) => {
@@ -84,10 +96,105 @@ const products = (req, res) => {
   res.json({ ok: true, data: PRODUCTS.read(null, { skip, limit }) });
 };
 
+const product_subscription = (req, res) => {
+  let { user, product, installment } = req.body;
+
+  let subscription = USER_SUBSCRIPTIONS.readone({ user, product, installment });
+
+  res.json({ ok: true, message: "product subscription", data: subscription });
+};
+
+const subscribe_to_product = (req, res) => {
+  let {
+    value,
+    payer,
+    part_payments,
+    total,
+    installment,
+    recipient,
+    title,
+    product,
+  } = req.body;
+
+  payer = USERS.readone(payer);
+  if (!payer)
+    return res.json({
+      ok: false,
+      data: { message: "Payer is not found in the system" },
+    });
+
+  recipient = VENDORS.readone(recipient);
+  if (!recipient)
+    return res.json({
+      ok: false,
+      data: { message: "Vendor is not found in the system" },
+    });
+
+  let wallet_res = WALLETS.update(payer.wallet, { balance: { $dec: value } });
+  let tx = {
+    type: "marketplace",
+    user: payer._id,
+    vendor: recipient._id,
+    title: "product subscription",
+    value,
+    data: product,
+    wallet: wallet_res._id,
+  };
+  TRANSACTIONS.write(tx);
+
+  wallet_res = WALLETS.update(recipient.wallet, {
+    balance: { $inc: value },
+    total_earnings: { $inc: value },
+  });
+
+  tx.wallet = wallet_res._id;
+  tx.credit = true;
+
+  TRANSACTIONS.write(tx);
+
+  let subscription = {
+    user: payer,
+    vendor: recipient,
+    title,
+    product,
+    total,
+    value,
+    part_payments,
+    recent_payment: Date.now(),
+    running: true,
+    installment,
+  };
+
+  let result = SUBCRIPTIONS.write(subscription);
+  PRODUCT_SUBSCRIPTIONS.write({
+    product,
+    installment,
+    subscription: result._id,
+  });
+  VENDOR_SUBSCRIPTIONS.write({
+    vendor: recipient._id,
+    subscription: result._id,
+    installment,
+  });
+  USER_SUBSCRIPTIONS.write({
+    user: payer._id,
+    installment,
+    subscription: result._id,
+  });
+
+  res.json({
+    ok: true,
+    message: "product subscription",
+    data: SUBCRIPTIONS.readone(result._id),
+  });
+};
+
 export {
   create_product_et_service,
   update_product,
+  subscribe_to_product,
   vendor_products_et_service,
+  product_subscription,
   add_to_wishlist,
   remove_from_wishlist,
   products,

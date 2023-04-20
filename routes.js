@@ -8,6 +8,7 @@ import {
   user,
   users,
   user_by_email,
+  user_kyc_doc,
   user_verification_request,
   verify_email,
   verify_user,
@@ -120,7 +121,9 @@ import {
   add_to_wishlist,
   create_product_et_service,
   products,
+  product_subscription,
   remove_from_wishlist,
+  subscribe_to_product,
   update_product,
   vendor_products_et_service,
   wishlist,
@@ -145,6 +148,7 @@ const router = (app) => {
   app.get("/top_vendors", top_vendors);
   app.get("/get_banks", get_banks);
   app.get("/accounts/:wallet", accounts);
+  app.get("/user_kyc_doc/:user", user_kyc_doc);
 
   app.post("/request_to_become_a_vendor", request_to_become_a_vendor);
   app.post("/verify_vendor/:vendor", verify_vendor);
@@ -160,7 +164,7 @@ const router = (app) => {
   app.post("/signup", signup);
   app.post("/login", login);
   app.post("/users", users);
-  app.post("/verify_user", verify_user);
+  app.post("/verify_user/:user", verify_user);
   app.post("/pending_user_verifications", pending_user_verifications);
   app.post("/user_verification_request", user_verification_request);
   app.post("/premium_user_subscription/:user", premium_user_subscription);
@@ -247,6 +251,8 @@ const router = (app) => {
   app.post("/remove_from_wishlist", remove_from_wishlist);
   app.post("/wishlist/:user", wishlist);
   app.post("/products", products);
+  app.post("/subscribe_to_product", subscribe_to_product);
+  app.post("/product_subscription", product_subscription);
   app.post("/vendor_products_et_service/:vendor", vendor_products_et_service);
 };
 
