@@ -46,7 +46,7 @@ const ds_conn = () => {
   gds = new GDS(
     "voupon",
     process.env["PWD"].includes("www")
-      ? process.env["PWD"].split("/").slice(0, -1).join("/")
+      ? process.env["PWD"].split("/").slice(0).join("/")
       : null
   ).sync();
 

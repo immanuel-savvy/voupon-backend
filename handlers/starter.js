@@ -7,6 +7,7 @@ import {
   USERS_HASH,
   WALLETS,
 } from "../ds/conn";
+import { GLOBAL_subscriptions } from "./marketplace";
 import { GLOBAL_pending_user_verification } from "./users";
 
 let default_admin = "adminstrators~123voupon~1234567890123",
@@ -53,6 +54,13 @@ const create_default_admin = () => {
     GLOBALS.write({
       global: GLOBAL_pending_user_verification,
       users: new Array(),
+    });
+
+  !GLOBALS.readone({ global: GLOBAL_subscriptions }) &&
+    GLOBALS.write({
+      global: GLOBAL_subscriptions,
+      active: true,
+      subscribers: new Array(),
     });
 };
 

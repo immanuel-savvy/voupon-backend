@@ -104,6 +104,8 @@ const product_subscription = (req, res) => {
   res.json({ ok: true, message: "product subscription", data: subscription });
 };
 
+let GLOBAL_subscriptions = "product_subscriptions";
+
 const subscribe_to_product = (req, res) => {
   let {
     value,
@@ -113,6 +115,7 @@ const subscribe_to_product = (req, res) => {
     installment,
     recipient,
     title,
+    number_of_payments,
     product,
   } = req.body;
 
@@ -159,6 +162,7 @@ const subscribe_to_product = (req, res) => {
     product,
     total,
     value,
+    number_of_payments,
     part_payments,
     recent_payment: Date.now(),
     running: true,
@@ -166,6 +170,12 @@ const subscribe_to_product = (req, res) => {
   };
 
   let result = SUBCRIPTIONS.write(subscription);
+
+  GLOBAL_subscriptions.update(
+    { global: GLOBAL_subscriptions },
+    { subcribers: { $push: result._id } }
+  );
+
   PRODUCT_SUBSCRIPTIONS.write({
     product,
     installment,
@@ -199,4 +209,5 @@ export {
   remove_from_wishlist,
   products,
   wishlist,
+  GLOBAL_subscriptions,
 };
