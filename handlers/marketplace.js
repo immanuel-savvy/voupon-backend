@@ -167,6 +167,7 @@ const subscribe_to_product = (req, res) => {
     recent_payment: Date.now(),
     running: true,
     installment,
+    total_payments_made: 0,
   };
 
   let result = SUBCRIPTIONS.write(subscription);

@@ -39,6 +39,7 @@ let USERS,
   USER_COUPONS,
   WISHLIST,
   ACCOUNTS,
+  NOTIFICATIONS,
   USER_VERIFICATION_DETAILS,
   USERS_HASH;
 
@@ -93,6 +94,7 @@ const ds_conn = () => {
   PURCHASED_VOUCHERS = gds.folder("purchased_vouchers", null, "voucher");
   CONTACT_MESSAGES = gds.folder("contact_messages", null, "interest");
   ACCOUNTS = gds.folder("accounts", "wallet");
+  NOTIFICATIONS = gds.folder("notifications", "user", "data");
 
   PRODUCT_SUBSCRIPTIONS = gds.folder(
     "product_subscriptions",
@@ -127,6 +129,7 @@ export {
   WISHLIST,
   USER_TICKETS,
   PURCHASED_VOUCHERS,
+  NOTIFICATIONS,
   ACCOUNTS,
   USER_VERIFICATION_DETAILS,
   REDEEMED_VOUCHERS,

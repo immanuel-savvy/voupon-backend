@@ -171,4 +171,5 @@ export {
   GLOBAL_newsletter,
   GLOBAL_pending_vendors,
   default_wallet,
+  default_user,
 };

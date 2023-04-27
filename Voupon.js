@@ -5,7 +5,7 @@ import router from "./routes";
 import bodyParser from "body-parser";
 import { create_default_admin } from "./handlers/starter";
 import { reset_vendor_id } from "./handlers/voucher";
-import { send_mail } from "./handlers/users";
+import { refresh_subscriptions } from "./handlers/subscriptions";
 
 const app = express();
 app.use(cors());
@@ -17,7 +17,6 @@ app.use((req, res, next) => {
   if (req.header.vendor_id) {
     req.header.vendor_id = reset_vendor_id(req.header.vendor_id);
     req.body.vendor = req.header.vendor_id;
-    console.log(req.body.vendor);
   }
 
   next();
@@ -37,5 +36,8 @@ app.listen(1449, () => {
   ds_conn();
 
   create_default_admin();
+
+  refresh_subscriptions();
+
   console.log("Voupon Backend started on :1449");
 });
