@@ -953,12 +953,22 @@ const update_voucher = (req, res) => {
   });
 };
 
+const voucher_page = (req, res) => {
+  let { voucher, vendor } = req.params;
+
+  voucher = OFFER_VOUCHERS.readone({ _id: voucher, vendor });
+  vendor = voucher && vendor && VENDORS.readone(vendor);
+
+  voucher ? res.json({ ok: true, data: { voucher, vendor } }) : res.end();
+};
+
 export {
   get_offer_vouchers,
   create_offer_voucher,
   create_open_voucher,
   offer_vouchers,
   verify_voucher,
+  voucher_page,
   open_vouchers,
   update_voucher,
   voucher_purchased,

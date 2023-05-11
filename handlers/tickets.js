@@ -68,9 +68,12 @@ const vendor_events = (req, res) => {
 };
 
 const events = (req, res) => {
-  let { limit, skip } = req.body;
+  let { limit, skip, query } = req.body;
 
-  let events_ = EVENTS.read(null, { limit: Number(limit), skip: Number(skip) });
+  let events_ = EVENTS.read(query || null, {
+    limit: Number(limit),
+    skip: Number(skip),
+  });
 
   res.json({ ok: true, message: "events", data: { events: events_ } });
 };
@@ -495,10 +498,21 @@ const upcoming_events = (req, res) => {
   res.json({ ok: true, message: "upcoming events", data: events });
 };
 
+const event_page = (req, res) => {
+  let { event } = req.params;
+
+  event = EVENTS.readone(event);
+
+  event
+    ? res.json({ ok: true, data: { event, vendor: event.vendor } })
+    : res.end();
+};
+
 export {
   create_event,
   upcoming_events,
   request_ticket_otp,
+  event_page,
   vendor_events,
   events,
   ticket_purchased,

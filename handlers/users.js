@@ -8,7 +8,11 @@ import {
 } from "../ds/conn";
 import nodemailer from "nodemailer";
 import { generate_random_string } from "generalised-datastore/utils/functions";
-import { user_verified_email, verification } from "./emails";
+import {
+  forgot_password_email,
+  user_verified_email,
+  verification,
+} from "./emails";
 import { remove_image, save_file, save_image } from "./utils";
 import { unmask_id } from "./voucher";
 import { rewards } from "./wallets";
@@ -155,9 +159,7 @@ const signup = (req, res) => {
     recipient: user.email,
     recipient_name: fullname,
     subject: "[Voucher Africa] Please verify your email",
-    sender: "signup@udaralinksapp.com",
-    sender_name: "Voupon",
-    sender_pass: "signupudaralinks",
+    sender_name: "Voucher Africa",
     html: verification(code, fullname),
   });
 
@@ -205,7 +207,7 @@ const user = (req, res) => {
 };
 
 const verify_email = (req, res) => {
-  let { email, verification_code } = req.body;
+  let { email, verification_code, password } = req.body;
   email = email && email.trim().toLowerCase();
   verification_code = verification_code && verification_code.trim();
 
@@ -215,11 +217,16 @@ const verify_email = (req, res) => {
     return res.json({
       ok: false,
       message: "",
-      data: "Email verification failed.",
+      data: { message: "Email verification failed." },
     });
 
   let user = USERS.readone({ email });
-  USERS.update(user._id, { verified: true });
+  if (!user)
+    return res.json({ ok: false, data: { message: "User not found!" } });
+
+  if (password) {
+    USERS_HASH.update({ user: user._id }, { key: password });
+  } else USERS.update(user._id, { verified: true });
 
   res.json({ ok: true, message: "user email verified", data: user });
 };
@@ -232,7 +239,7 @@ const login = (req, res) => {
     return res.json({
       ok: false,
       message: "user not found",
-      data: "User not found",
+      data: { message: "User not found" },
     });
 
   let user_hash = USERS_HASH.readone({ user: user._id });
@@ -240,7 +247,7 @@ const login = (req, res) => {
     return res.json({
       ok: false,
       message: "invalid password",
-      data: "Invalid password",
+      data: { message: "Invalid password" },
     });
 
   if (!user.wallet) {
@@ -434,6 +441,29 @@ const user_kyc_doc = (req, res) => {
   });
 };
 
+const request_password_otp = (req, res) => {
+  let { email } = req.body;
+
+  if (!email) return res.json({ ok: false, data: { message: "Invalid data" } });
+
+  email = email.trim().toLowerCase();
+
+  let user = USERS.readone({ email });
+  if (!user)
+    return res.json({ ok: false, data: { message: "User not found" } });
+
+  let otp = generate_random_string(6, "num");
+  email_verification_codes[email] = otp;
+
+  send_mail({
+    recipient: email,
+    subject: "[Voucher Africa] Please verify your email",
+    html: forgot_password_email(otp),
+  });
+
+  res.json({ ok: true, message: "", data: { _id: user._id } });
+};
+
 export {
   signup,
   login,
@@ -451,4 +481,5 @@ export {
   premium_user_subscription,
   users,
   claim_daily_reward_token,
+  request_password_otp,
 };

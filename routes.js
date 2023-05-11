@@ -3,6 +3,7 @@ import {
   login,
   pending_user_verifications,
   premium_user_subscription,
+  request_password_otp,
   signup,
   update_user,
   user,
@@ -73,6 +74,7 @@ import {
   use_voucher,
   vendor_id,
   verify_voucher,
+  voucher_page,
   voucher_purchased,
 } from "./handlers/voucher";
 import {
@@ -107,6 +109,7 @@ import {
   can_transact_ticket,
   create_event,
   events,
+  event_page,
   event_tickets,
   request_ticket_otp,
   ticket_purchased,
@@ -149,7 +152,10 @@ const router = (app) => {
   app.get("/get_banks", get_banks);
   app.get("/accounts/:wallet", accounts);
   app.get("/user_kyc_doc/:user", user_kyc_doc);
+  app.get("/event_page/:event", event_page);
+  app.get("/voucher_page/:voucher/:vendor", voucher_page);
 
+  app.post("/request_password_otp", request_password_otp);
   app.post("/request_to_become_a_vendor", request_to_become_a_vendor);
   app.post("/verify_vendor/:vendor", verify_vendor);
   app.post("/voucher_purchased", voucher_purchased);

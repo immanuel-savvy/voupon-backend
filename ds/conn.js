@@ -31,7 +31,6 @@ let USERS,
   COUPONS,
   EVENTS,
   TICKETS,
-  CARTS,
   USER_TICKETS,
   EVENT_TICKETS,
   VENDOR_EVENTS,
@@ -81,7 +80,6 @@ const ds_conn = () => {
   REDEEMED_VOUCHERS = gds.folder("redeemed_vouchers");
 
   WISHLIST = gds.folder("wishlist", "user", "product");
-  CARTS = gds.folder("carts", "user", "product");
 
   TICKETS = gds.folder("tickets", null, "event");
   EVENT_TICKETS = gds.folder("event_tickets", "event", "user");
@@ -123,7 +121,6 @@ export {
   COUPONS,
   VENDORS_COUPONS,
   GLOBALS,
-  CARTS,
   EVENT_TICKETS,
   EVENTS,
   WISHLIST,
