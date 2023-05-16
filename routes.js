@@ -50,7 +50,9 @@ import {
   accounts,
   add_account,
   close_vendor_account,
+  remove_suspension,
   request_to_become_a_vendor,
+  suspend_vendor,
   top_vendors,
   unverified_vendors,
   vendor,
@@ -259,6 +261,8 @@ const router = (app) => {
   app.post("/products", products);
   app.post("/subscribe_to_product", subscribe_to_product);
   app.post("/product_subscription", product_subscription);
+  app.post("/suspend_vendor/:vendor", suspend_vendor);
+  app.post("/remove_suspension/:vendor", remove_suspension);
   app.post("/vendor_products_et_service/:vendor", vendor_products_et_service);
 };
 

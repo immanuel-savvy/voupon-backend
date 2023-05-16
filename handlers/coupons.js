@@ -82,6 +82,12 @@ const premium_coupon_obtained = (req, res) => {
     });
 
   coupon = COUPONS.readone(coupon);
+  if (coupon.vendor.suspended)
+    return res.json({
+      ok: false,
+      data: { message: "Cannot obtain coupon at the moment." },
+    });
+
   if (typeof coupon.duration === "number" && coupon.duration < Date.now()) {
     return res.json({ ok: false, data: { message: "Coupon already expired" } });
   }
@@ -150,8 +156,6 @@ const search_coupons = (req, res) => {
  */
 const applied_coupon = (req, res) => {
   let { coupon, user } = req.body;
-
-  console.log(coupon, user);
 
   if (!coupon)
     return res.json({

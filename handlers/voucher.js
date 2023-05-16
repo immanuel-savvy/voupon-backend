@@ -161,6 +161,13 @@ const voucher_purchased = (req, res) => {
   while (PURCHASED_VOUCHERS.readone({ voucher_code }))
     voucher_code = generate_random_string(6, "alpha").toUpperCase();
 
+  let vendor = VENDORS.readone(details.vendor);
+  if (vendor.suspended)
+    return res.json({
+      ok: false,
+      data: { message: "Cannot purchase from Vendor at the moment." },
+    });
+
   let result = PURCHASED_VOUCHERS.write({
     ...details,
     voucher_code,
@@ -193,6 +200,7 @@ const voucher_purchased = (req, res) => {
     user: details.user,
     email: details.email,
     voucher_code,
+    value: offer_voucher.value,
     state: "unused",
   });
 
@@ -213,10 +221,14 @@ const voucher_purchased = (req, res) => {
     recipient: details.email,
     recipient_name: `${details.firstname} ${details.lastname}`,
     subject: "[Voucher Africa] Voucher Purchased",
-    sender: "signup@udaralinksapp.com",
-    sender_name: "Voupon",
-    sender_pass: "signupudaralinks",
     html: voucher_purchased_email({ ...details, voucher_code }),
+  });
+
+  send_mail({
+    recipient: vendor.email,
+    recipient_name: `${vendor.name}`,
+    subject: "[Voucher Africa] New Voucher Purchased",
+    html: voucher_purchased_email({ ...details, ...vendor, voucher_code }),
   });
 
   res.json({
@@ -284,6 +296,7 @@ const create_open_voucher = (req, res) => {
   result = OPEN_VOUCHERS.write({
     voucher: details._id,
     user: details.user,
+    value: details.value,
     voucher_code,
   });
   result = {
@@ -515,8 +528,9 @@ const redeem_voucher = (req, res) => {
   let { firstname, lastname, referral } = user_;
   email = email || user_.email;
 
-  voucher = voucher.voucher;
   let { value } = voucher;
+  voucher = voucher.voucher;
+
   if (!voucher) return res.json({ ok: false, message: "voucher not found" });
   if (voucher.state && voucher.state !== "unused")
     return res.json({
@@ -877,11 +891,9 @@ const use_voucher = (req, res) => {
 
   vendor = VENDORS.readone(vendor);
 
-  value = Number(
-    voucher.voucher.vendor ? Number(voucher.voucher.value) : value
-  );
+  value = Number(voucher.voucher.vendor ? Number(voucher.value) : value);
 
-  let vendor_value = value * (value * 0.05);
+  let vendor_value = value - value * 0.05;
   WALLETS.update(vendor.wallet, { vouchers: { $inc: vendor_value } });
 
   let tx = {

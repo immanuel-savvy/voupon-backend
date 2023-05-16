@@ -133,6 +133,12 @@ const subscribe_to_product = (req, res) => {
       data: { message: "Vendor is not found in the system" },
     });
 
+  if (recipient.suspended)
+    return res.json({
+      ok: false,
+      data: { message: "Cannot subscribe to Vendor at the moment." },
+    });
+
   let wallet_res = WALLETS.update(payer.wallet, { balance: { $dec: value } });
   let tx = {
     type: "marketplace",

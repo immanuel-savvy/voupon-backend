@@ -83,6 +83,14 @@ const ticket_purchased = (req, res) => {
   let { user, email, quantity } = details;
   quantity = Number(quantity || 1);
 
+  let vendor = VENDORS.readone(details.vendor);
+  if (vendor.suspended) {
+    return res.json({
+      ok: false,
+      data: { message: "Cannot purchase from Vendor at the moment." },
+    });
+  }
+
   let firstname, lastname;
   if (!user) {
     user = USERS.readone({ email });
@@ -105,13 +113,24 @@ const ticket_purchased = (req, res) => {
     }
   );
 
-  let ticket, ticket_res;
+  let ticket,
+    ticket_res,
+    value = event.value;
 
   let user_ticket = USER_TICKETS.readone({ user, event: event._id });
   if (user_ticket) {
+    let values = user_ticket.values;
+    let ticks = values[String(value)] || new Array();
+    ticks.push(...ticket_code);
+    values[String(value)] = ticks;
+
     USER_TICKETS.update(
       { user, _id: user_ticket._id },
-      { ticket_code: { $push: ticket_code }, quantity: { $inc: quantity } }
+      {
+        ticket_code: { $push: ticket_code },
+        values,
+        quantity: { $inc: quantity },
+      }
     );
     EVENT_TICKETS.update(
       { ticket: user_ticket.ticket._id, event: event._id },
@@ -148,6 +167,7 @@ const ticket_purchased = (req, res) => {
       quantity,
       event: event._id,
       ticket: ticket._id,
+      values: { [String(value)]: ticket_code },
       user,
     });
   }
@@ -170,10 +190,14 @@ const ticket_purchased = (req, res) => {
     recipient: details.email,
     recipient_name: `${firstname} ${lastname}`,
     subject: "[Voucher Africa] Ticket Purchased",
-    sender: "signup@udaralinksapp.com",
-    sender_name: "Voucher Africa",
-    sender_pass: "signupudaralinks",
     html: voucher_purchased_email({ ...details, ticket_code }),
+  });
+
+  send_mail({
+    recipient: vendor._id,
+    recipient_name: `${vendor.name}`,
+    subject: "[Voucher Africa] Ticket Purchased",
+    html: voucher_purchased_email({ ...details, ...vendor, ticket_code }),
   });
 
   res.json({
@@ -380,13 +404,16 @@ const use_ticket = (req, res) => {
     });
 
   ticket = TICKETS.readone(ticket);
-  USER_TICKETS.readone({ ticket, user });
+  let user_ticket = USER_TICKETS.readone({ ticket, user });
+  let values = user_ticket.values;
 
   vendor = VENDORS.readone(vendor);
 
-  let value = Number(ticket.event.value);
+  let value;
+  for (const v in values)
+    if (values[v].includes(ticket_code)) value = Number(v);
 
-  let vendor_value = value * (value * 0.05);
+  let vendor_value = value - value * 0.05;
   WALLETS.update(vendor.wallet, { tickets: { $inc: vendor_value } });
 
   let tx = {
@@ -470,15 +497,12 @@ const verify_ticket = (req, res) => {
       },
     });
 
-  console.log(user_ticket);
   let ticket = TICKETS.readone(user_ticket.ticket);
-  console.log(ticket);
 
   if (ticket && ticket.used_codes && ticket.used_codes.includes(ticket_code))
     ticket.state = "used";
 
   ticket.ticket_code = new Array(ticket_code);
-  console.log(ticket);
 
   res.json({
     ok: true,

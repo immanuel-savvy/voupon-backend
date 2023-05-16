@@ -170,11 +170,29 @@ const top_vendors = (req, res) => {
   res.json({ ok: true, data: VENDORS.read(null, { limit: 10 }) });
 };
 
+const suspend_vendor = (req, res) => {
+  let { vendor } = req.params;
+
+  VENDORS.update(vendor, { suspended: Date.now() });
+
+  res.end();
+};
+
+const remove_suspension = (req, res) => {
+  let { vendor } = req.params;
+
+  VENDORS.update(vendor, { suspended: false });
+
+  res.end();
+};
+
 export {
   request_to_become_a_vendor,
   top_vendors,
   vendor,
   unverified_vendors,
+  suspend_vendor,
+  remove_suspension,
   verify_vendor,
   close_vendor_account,
   vendors,
