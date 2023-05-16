@@ -70,7 +70,10 @@ const vendor_events = (req, res) => {
 const events = (req, res) => {
   let { limit, skip, query } = req.body;
 
-  let events_ = EVENTS.read(query || null, {
+  if (query) query = { ...query, state: { $ne: "closed" } };
+  else query = { state: { $ne: "closed" } };
+
+  let events_ = EVENTS.read(query, {
     limit: Number(limit),
     skip: Number(skip),
   });
@@ -194,7 +197,7 @@ const ticket_purchased = (req, res) => {
   });
 
   send_mail({
-    recipient: vendor._id,
+    recipient: vendor.email,
     recipient_name: `${vendor.name}`,
     subject: "[Voucher Africa] Ticket Purchased",
     html: voucher_purchased_email({ ...details, ...vendor, ticket_code }),
@@ -532,6 +535,32 @@ const event_page = (req, res) => {
     : res.end();
 };
 
+const close_ticket = (req, res) => {
+  let { event, previous_state, vendor } = req.body;
+
+  let result = EVENTS.update(
+    { _id: event, vendor },
+    { state: "closed", previous_state: previous_state || "upcoming" }
+  );
+
+  res.json({
+    ok: true,
+    message: "ticket closed",
+    data: { event: result && result._id },
+  });
+};
+
+const remove_from_closed_ticket = (req, res) => {
+  let { event, previous_state, vendor } = req.body;
+
+  EVENTS.update(
+    { _id: event, vendor },
+    { state: previous_state, previous_state: null }
+  );
+
+  res.end();
+};
+
 export {
   create_event,
   upcoming_events,
@@ -542,6 +571,8 @@ export {
   ticket_purchased,
   event_tickets,
   use_ticket,
+  close_ticket,
+  remove_from_closed_ticket,
   verify_ticket,
   can_transact_ticket,
   user_tickets,

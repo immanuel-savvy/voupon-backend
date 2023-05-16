@@ -139,6 +139,7 @@ const get_offer_vouchers = (req, res) => {
         vendor: vendor._id,
         duration: { $gt: Date.now() },
         quantities: { $gt: 0 },
+        state: {$ne: 'closed'}
       })
     )
   );
@@ -830,11 +831,11 @@ const verify_voucher = (req, res) => {
 };
 
 const close_voucher = (req, res) => {
-  let { voucher, vendor } = req.body;
+  let { voucher, previous_state, vendor } = req.body;
 
   let result = OFFER_VOUCHERS.update(
     { _id: voucher, vendor },
-    { state: "closed" }
+    { state: "closed", previous_state: previous_state || "running" }
   );
 
   res.json({
@@ -842,6 +843,17 @@ const close_voucher = (req, res) => {
     message: "offer closed",
     data: { voucher: result && result._id },
   });
+};
+
+const remove_from_closed_voucher = (req, res) => {
+  let { voucher, previous_state, vendor } = req.body;
+
+  OFFER_VOUCHERS.update(
+    { _id: voucher, vendor },
+    { state: previous_state, previous_state: null }
+  );
+
+  res.end();
 };
 
 /**
@@ -989,6 +1001,7 @@ export {
   can_redeem_voucher,
   request_voucher_otp,
   transfer_voucher,
+  remove_from_closed_voucher,
   close_voucher,
   parse_vendor_id,
   reset_vendor_id,

@@ -69,6 +69,7 @@ import {
   offer_vouchers,
   open_vouchers,
   redeem_voucher,
+  remove_from_closed_voucher,
   request_voucher_otp,
   transfer_voucher,
   update_voucher,
@@ -109,10 +110,12 @@ import {
 } from "./handlers/comments";
 import {
   can_transact_ticket,
+  close_ticket,
   create_event,
   events,
   event_page,
   event_tickets,
+  remove_from_closed_ticket,
   request_ticket_otp,
   ticket_purchased,
   upcoming_events,
@@ -206,6 +209,7 @@ const router = (app) => {
   app.post("/remove_trustee/:trustee", remove_trustee);
   app.post("/verify_voucher", verify_voucher);
   app.post("/close_voucher", close_voucher);
+  app.post("/remove_from_closed_voucher", remove_from_closed_voucher);
 
   app.post("/new_comment", new_comment);
   app.post("/comment_like", comment_like);
@@ -249,6 +253,8 @@ const router = (app) => {
   app.post("/can_transact_ticket", can_transact_ticket);
   app.post("/use_ticket", use_ticket);
   app.post("/verify_ticket", verify_ticket);
+  app.post("/close_ticket", close_ticket);
+  app.post("/remove_from_closed_ticket", remove_from_closed_ticket);
   app.post("/upcoming_events/:limit", upcoming_events);
 
   app.post("/search_query", search_query);

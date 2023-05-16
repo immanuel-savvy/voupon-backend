@@ -5,7 +5,10 @@ import router from "./routes";
 import bodyParser from "body-parser";
 import { create_default_admin } from "./handlers/starter";
 import { reset_vendor_id } from "./handlers/voucher";
-import { refresh_subscriptions } from "./handlers/subscriptions";
+import {
+  event_reminders,
+  refresh_subscriptions,
+} from "./handlers/subscriptions";
 
 const app = express();
 app.use(cors());
@@ -38,6 +41,7 @@ app.listen(1449, () => {
   create_default_admin();
 
   refresh_subscriptions();
+  event_reminders();
 
   console.log("Voupon Backend started on :1449");
 });
