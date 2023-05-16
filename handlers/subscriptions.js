@@ -1,5 +1,6 @@
 import {
   EVENTS,
+  EVENT_TICKETS,
   GLOBALS,
   NOTIFICATIONS,
   SUBCRIPTIONS,
@@ -116,10 +117,10 @@ const event_reminders = () => {
 
       let { event_date_time, _id } = event;
       if (Date.now() + a_day > event_date_time) {
-        let event_tickets = EVENTS.read({ event: _id });
+        let event_tickets = EVENT_TICKETS.read({ event: _id });
 
         event_tickets.map((e) => {
-          let user = USERS.readone(e.user);
+          let user = e.user;
 
           send_mail({
             title: "[Voucher Africa] Event Reminder",
