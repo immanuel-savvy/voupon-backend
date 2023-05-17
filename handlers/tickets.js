@@ -416,8 +416,11 @@ const use_ticket = (req, res) => {
   for (const v in values)
     if (values[v].includes(ticket_code)) value = Number(v);
 
-  let vendor_value = value - value * 0.05;
-  WALLETS.update(vendor.wallet, { tickets: { $inc: vendor_value } });
+  let vendor_value = 0;
+  if (Number(value) > 0) {
+    vendor_value = value - value * 0.05;
+    WALLETS.update(vendor.wallet, { tickets: { $inc: vendor_value } });
+  }
 
   let tx = {
     wallet: vendor.wallet,
@@ -438,24 +441,25 @@ const use_ticket = (req, res) => {
   tx.credit = false;
   TRANSACTIONS.write(tx);
 
-  WALLETS.update(default_wallet, {
-    balance: { $inc: value - vendor_value },
-    total_earnings: { $inc: value - vendor_value },
-  });
+  if (Number(value) > 0) {
+    WALLETS.update(default_wallet, {
+      balance: { $inc: value - vendor_value },
+      total_earnings: { $inc: value - vendor_value },
+    });
 
-  TRANSACTIONS.write({
-    credit: true,
-    value: value - vendor_value,
-    voucher_code: ticket.voucher_code,
-    title: "Offer Voucher Sales Commission",
-    wallet: default_wallet,
-    type: "ticket",
-    user,
-    ticket: ticket._id,
-  });
+    TRANSACTIONS.write({
+      credit: true,
+      value: value - vendor_value,
+      voucher_code: ticket.voucher_code,
+      title: "Offer Voucher Sales Commission",
+      wallet: default_wallet,
+      type: "ticket",
+      user,
+      ticket: ticket._id,
+    });
 
-  WALLETS.update(vendor.wallet, { tickets: { $inc: value } });
-
+    WALLETS.update(vendor.wallet, { tickets: { $inc: value } });
+  }
   USER_TICKETS.update(
     { user, ticket: ticket._id },
     { used_codes: { $push: ticket_code } }
