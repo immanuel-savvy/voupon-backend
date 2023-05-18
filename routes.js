@@ -57,6 +57,7 @@ import {
   unverified_vendors,
   vendor,
   vendors,
+  vendor_availability,
   verify_vendor,
 } from "./handlers/vendors";
 import {
@@ -77,6 +78,7 @@ import {
   use_voucher,
   vendor_id,
   verify_voucher,
+  voucher_availability,
   voucher_page,
   voucher_purchased,
 } from "./handlers/voucher";
@@ -113,6 +115,7 @@ import {
   close_ticket,
   create_event,
   events,
+  event_availability,
   event_page,
   event_tickets,
   remove_from_closed_ticket,
@@ -157,7 +160,7 @@ const router = (app) => {
   app.get("/get_banks", get_banks);
   app.get("/accounts/:wallet", accounts);
   app.get("/user_kyc_doc/:user", user_kyc_doc);
-  app.get("/event_page/:event", event_page);
+  app.get("/event_page/:vendor/:event", event_page);
   app.get("/voucher_page/:voucher/:vendor", voucher_page);
 
   app.post("/request_password_otp", request_password_otp);
@@ -185,6 +188,9 @@ const router = (app) => {
   app.post("/create_admin", create_admin);
   app.post("/update_user/:user", update_user);
   app.post("/admin_login", admin_login);
+  app.post("/vendor_availability", vendor_availability);
+  app.post("/event_availability", event_availability);
+  app.post("/voucher_availability", voucher_availability);
   app.post("/contact_messages", contact_messages);
   app.post("/contact_message_seen/:message", contact_message_seen);
   app.post("/remove_contact_message/:message", remove_contact_messages);

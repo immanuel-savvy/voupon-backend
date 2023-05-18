@@ -139,7 +139,7 @@ const get_offer_vouchers = (req, res) => {
         vendor: vendor._id,
         duration: { $gt: Date.now() },
         quantities: { $gt: 0 },
-        state: {$ne: 'closed'}
+        state: { $ne: "closed" },
       })
     )
   );
@@ -980,16 +980,31 @@ const update_voucher = (req, res) => {
 const voucher_page = (req, res) => {
   let { voucher, vendor } = req.params;
 
-  voucher = OFFER_VOUCHERS.readone({ _id: voucher, vendor });
-  vendor = voucher && vendor && VENDORS.readone(vendor);
+  vendor = VENDORS.readone({ uri: vendor });
+  if (!vendor) return res.end();
 
-  voucher ? res.json({ ok: true, data: { voucher, vendor } }) : res.end();
+  voucher = OFFER_VOUCHERS.readone({ uri: voucher, vendor: vendor._id });
+
+  voucher
+    ? res.json({ ok: true, data: { voucher, vendor: voucher.vendor } })
+    : res.end();
+};
+
+const voucher_availability = (req, res) => {
+  let { uri, vendor } = req.body;
+
+  let v = OFFER_VOUCHERS.readone({ uri, vendor });
+  res.json({
+    ok: !v,
+    data: { available: !v },
+  });
 };
 
 export {
   get_offer_vouchers,
   create_offer_voucher,
   create_open_voucher,
+  voucher_availability,
   offer_vouchers,
   verify_voucher,
   voucher_page,

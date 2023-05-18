@@ -14,7 +14,11 @@ import { save_file, save_image } from "./utils";
 const vendor = (req, res) => {
   let { vendor: vendor_ } = req.params;
 
-  res.json({ ok: true, message: "vendor", data: VENDORS.readone(vendor_) });
+  res.json({
+    ok: true,
+    message: "vendor",
+    data: VENDORS.readone({ uri: vendor_ }),
+  });
 };
 
 const vendors = (req, res) => {
@@ -59,6 +63,7 @@ const request_to_become_a_vendor = (req, res) => {
   USERS.update(user, {
     vendor: result._id,
     vendor_status: "pending",
+    vendor_uri: documents.uri,
   });
 
   GLOBALS.update(
@@ -186,6 +191,16 @@ const remove_suspension = (req, res) => {
   res.end();
 };
 
+const vendor_availability = (req, res) => {
+  let { uri } = req.body;
+
+  let v = VENDORS.readone({ uri });
+  res.json({
+    ok: !v,
+    data: { available: !v },
+  });
+};
+
 export {
   request_to_become_a_vendor,
   top_vendors,
@@ -198,5 +213,6 @@ export {
   vendors,
   vendors_by_category,
   accounts,
+  vendor_availability,
   add_account,
 };

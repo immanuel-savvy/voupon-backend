@@ -522,7 +522,7 @@ const upcoming_events = (req, res) => {
   let { limit } = req.params;
 
   let events = EVENTS.read(
-    { event_date_time: { $gt: Date.now() } },
+    { event_date_time: { $gt: Date.now() }, state: { $ne: "closed" } },
     { limit: Number(limit) }
   );
 
@@ -530,9 +530,12 @@ const upcoming_events = (req, res) => {
 };
 
 const event_page = (req, res) => {
-  let { event } = req.params;
+  let { event, vendor } = req.params;
 
-  event = EVENTS.readone(event);
+  vendor = VENDORS.readone({ uri: vendor });
+  if (!vendor) return res.end();
+
+  event = EVENTS.readone({ uri: event, vendor: vendor._id });
 
   event
     ? res.json({ ok: true, data: { event, vendor: event.vendor } })
@@ -565,6 +568,16 @@ const remove_from_closed_ticket = (req, res) => {
   res.end();
 };
 
+const event_availability = (req, res) => {
+  let { uri, vendor } = req.body;
+
+  let v = EVENTS.readone({ uri, vendor });
+  res.json({
+    ok: !v,
+    data: { available: !v },
+  });
+};
+
 export {
   create_event,
   upcoming_events,
@@ -576,6 +589,7 @@ export {
   event_tickets,
   use_ticket,
   close_ticket,
+  event_availability,
   remove_from_closed_ticket,
   verify_ticket,
   can_transact_ticket,
