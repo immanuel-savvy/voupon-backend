@@ -1,4 +1,7 @@
+import axios from "axios";
 import {
+  LOGS,
+  PAYMENT_DATA,
   PRODUCTS,
   PRODUCT_SUBSCRIPTIONS,
   SUBCRIPTIONS,
@@ -11,6 +14,7 @@ import {
   WALLETS,
   WISHLIST,
 } from "../ds/conn";
+import { domain_name, paystack_secret_key } from "./admin";
 import { save_image } from "./utils";
 
 const create_product_et_service = (req, res) => {
@@ -29,6 +33,31 @@ const create_product_et_service = (req, res) => {
     VENDOR_PRODUCTS.write({ product: product._id, vendor: product.vendor });
 
   VENDORS.update(product.vendor, { products: { $inc: 1 } });
+
+  product.installments.map((installment) => {
+    axios({
+      url: "https://api.paystack.co/plan",
+      method: "post",
+      headers: {
+        Authorization: `Bearer ${paystack_secret_key}`,
+        "Content-Type": "application/json",
+      },
+      data: {
+        name: product.title,
+        interval: installment,
+        amount: String(Number(product[`${installment}_product_price`]) * 100),
+        invoice_limit: Number(product[`number_of_${installment}_payments`]),
+      },
+    })
+      .then((data) => {
+        data = data.data;
+        if (data.status)
+          PRODUCTS.update(product._id, {
+            [`${installment}_plan_code`]: data.data.plan_code,
+          });
+      })
+      .catch((err) => console.log(err));
+  });
 
   res.json({
     ok: true,
@@ -59,7 +88,10 @@ const vendor_products_et_service = (req, res) => {
   let { vendor } = req.params;
   let { limit, skip } = req.body;
 
-  let products = VENDOR_PRODUCTS.read({ vendor }, { limit, skip });
+  let products = VENDOR_PRODUCTS.read(
+    { vendor, state: { $ne: "closed" } },
+    { limit, skip }
+  );
 
   res.json({
     ok: true,
@@ -93,7 +125,10 @@ const wishlist = (req, res) => {
 const products = (req, res) => {
   let { skip, limit } = req.body;
 
-  res.json({ ok: true, data: PRODUCTS.read(null, { skip, limit }) });
+  res.json({
+    ok: true,
+    data: PRODUCTS.read({ state: { $ne: "closed" } }, { skip, limit }),
+  });
 };
 
 const product_subscription = (req, res) => {
@@ -139,7 +174,7 @@ const subscribe_to_product = (req, res) => {
       data: { message: "Cannot subscribe to Vendor at the moment." },
     });
 
-  let wallet_res = WALLETS.update(payer.wallet, { balance: { $dec: value } });
+  // let wallet_res = WALLETS.update(payer.wallet, { balance: { $dec: value } });
   let tx = {
     type: "marketplace",
     user: payer._id,
@@ -147,16 +182,16 @@ const subscribe_to_product = (req, res) => {
     title: "product subscription",
     value,
     data: product,
-    wallet: wallet_res._id,
+    wallet: payer.wallet,
   };
   TRANSACTIONS.write(tx);
 
-  wallet_res = WALLETS.update(recipient.wallet, {
-    balance: { $inc: value },
-    total_earnings: { $inc: value },
-  });
+  // wallet_res = WALLETS.update(recipient.wallet, {
+  //   balance: { $inc: value },
+  //   total_earnings: { $inc: value },
+  // });
 
-  tx.wallet = wallet_res._id;
+  tx.wallet = recipient.wallet;
   tx.credit = true;
 
   TRANSACTIONS.write(tx);
@@ -206,9 +241,139 @@ const subscribe_to_product = (req, res) => {
   });
 };
 
+const close_product = (req, res) => {
+  let { product, vendor } = req.body;
+
+  VENDOR_PRODUCTS.update({ product, vendor }, { state: "closed" });
+  PRODUCTS.update(product, { state: "closed" });
+
+  res.end();
+};
+
+const unclose_product = (req, res) => {
+  let { product, vendor } = req.body;
+
+  VENDOR_PRODUCTS.update({ product, vendor }, { state: "running" });
+  PRODUCTS.update(product, { state: { $ne: "running" } });
+
+  res.end();
+};
+
+const vendor_closed_products = (req, res) => {
+  let { vendor } = req.body;
+
+  res.json({
+    ok: true,
+    message: "Vendor closed products",
+    data: VENDOR_PRODUCTS.read({ vendor, state: "closed" }),
+  });
+};
+
+const payment_data = (req, res) => {
+  let data = req.body;
+
+  let result = PAYMENT_DATA.write(data);
+
+  res.json({ ok: true, data: { _id: result._id } });
+};
+
+const update_payment_data_with_reference = (req, res) => {
+  let { payment_data, reference } = req.body;
+  if (!payment_data || !reference)
+    return res.json({ ok: false, data: { message: "payment data invalid" } });
+
+  PAYMENT_DATA.update(payment_data, { reference });
+
+  res.end();
+};
+
+const remove_payment_data = (req, res) => {
+  let { payment_data } = req.params;
+
+  PAYMENT_DATA.remove(payment_data);
+
+  res.end();
+};
+
+const installment_days = new Object({
+  daily: 1,
+  weekly: 7,
+  monthly: 30,
+  biannually: 182,
+  annually: 365,
+});
+
+const payment_callbacks = (req, res) => {
+  let { reference } = req.params;
+  let data = PAYMENT_DATA.readone({ reference, resolved: { $ne: true } });
+
+  LOGS.write(data);
+
+  axios({
+    url: `https://api.paystack.co/transaction/verify/${reference}`,
+    method: "get",
+    headers: {
+      Authorization: `Bearer ${paystack_secret_key}`,
+      "Content-Type": "application/json",
+    },
+  })
+    .then((response) => {
+      response = response.data;
+
+      if (response.status) {
+        response = response.data;
+        if (response.status === "success") {
+          data.authorization = response.authorization;
+          data.customer = response.customer;
+
+          let product = PRODUCTS.readone(data.product);
+          axios({
+            url: "https://api.paystack.co/subscription",
+            method: "post",
+            headers: {
+              Authorization: `Bearer ${paystack_secret_key}`,
+              "Content-Type": "application/json",
+            },
+            data: {
+              customer: data.customer.customer_code,
+              plan: product[`${data.installment}_plan_code`],
+              authorization: data.authorization.authorization_code,
+              start_date: new Date(
+                Date.now() + installment_days[installment] * 24 * 60 * 60 * 1000
+              ).toISOString(),
+            },
+          })
+            .then((result) => {
+              result = result.data;
+
+              if (result.status) {
+                data.subscription_details = {
+                  subscription_code: result.data.subscription_code,
+                  email_token: result.data.email_token,
+                };
+
+                subscribe_to_product({ body: data }, res);
+                PAYMENT_DATA.update(data._id, { resolved: true });
+              }
+            })
+            .catch((err) => console.log(err, "4"));
+        }
+      } else {
+      }
+    })
+    .then((err) => console.log(err, "3"));
+};
+
 export {
+  payment_data,
+  update_payment_data_with_reference,
+  remove_payment_data,
   create_product_et_service,
   update_product,
+  payment_callbacks,
+  vendor_closed_products,
+  close_product,
+  unclose_product,
   subscribe_to_product,
   vendor_products_et_service,
   product_subscription,

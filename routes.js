@@ -130,15 +130,22 @@ import {
 } from "./handlers/tickets";
 import {
   add_to_wishlist,
+  close_product,
   create_product_et_service,
+  payment_data,
   products,
   product_subscription,
   remove_from_wishlist,
+  remove_payment_data,
   subscribe_to_product,
+  unclose_product,
+  update_payment_data_with_reference,
   update_product,
+  vendor_closed_products,
   vendor_products_et_service,
   wishlist,
 } from "./handlers/marketplace";
+import { paystack_webhook_url } from "./handlers/subscriptions";
 
 const router = (app) => {
   app.get("/user/:user_id", user);
@@ -275,7 +282,18 @@ const router = (app) => {
   app.post("/product_subscription", product_subscription);
   app.post("/suspend_vendor/:vendor", suspend_vendor);
   app.post("/remove_suspension/:vendor", remove_suspension);
+  app.post("/payment_data", payment_data);
+  app.post(
+    "/update_payment_data_with_reference",
+    update_payment_data_with_reference
+  );
+  app.post("/remove_payment_data/:payment_data", remove_payment_data);
+  app.post("/close_product", close_product);
+  app.post("/unclose_product", unclose_product);
+  app.post("/vendor_closed_products", vendor_closed_products);
   app.post("/vendor_products_et_service/:vendor", vendor_products_et_service);
+
+  app.post("/paystack_webhook_url", paystack_webhook_url);
 };
 
 export default router;

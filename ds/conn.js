@@ -38,6 +38,8 @@ let USERS,
   USER_COUPONS,
   WISHLIST,
   ACCOUNTS,
+  LOGS,
+  PAYMENT_DATA,
   NOTIFICATIONS,
   USER_VERIFICATION_DETAILS,
   USERS_HASH;
@@ -60,6 +62,7 @@ const ds_conn = () => {
   USER_VERIFICATION_DETAILS = gds.folder("user_verification_details");
   USERS_HASH = gds.folder("user_hash", "user");
   REVIEWS = gds.folder("reviews");
+  LOGS = gds.folder("logs");
   FAQS = gds.folder("faqs");
   PRODUCTS = gds.folder("products", null, "vendor");
   VENDOR_PRODUCTS = gds.folder("vendor_products", "vendor", "product");
@@ -104,6 +107,7 @@ const ds_conn = () => {
     "vendor",
     new Array("subscription")
   );
+  PAYMENT_DATA = gds.folder("payment_data");
   USER_SUBSCRIPTIONS = gds.folder("user_subscriptions", "user", "subscription");
   SUBCRIPTIONS = gds.folder(
     "subscriptions",
@@ -116,6 +120,7 @@ export {
   gds,
   USERS,
   ADMIN_HASH,
+  PAYMENT_DATA,
   ADMINSTRATORS,
   USERS_HASH,
   COUPONS,
@@ -124,6 +129,7 @@ export {
   EVENT_TICKETS,
   EVENTS,
   WISHLIST,
+  LOGS,
   USER_TICKETS,
   PURCHASED_VOUCHERS,
   NOTIFICATIONS,

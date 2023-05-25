@@ -848,6 +848,8 @@ const close_voucher = (req, res) => {
 const remove_from_closed_voucher = (req, res) => {
   let { voucher, previous_state, vendor } = req.body;
 
+  if (previous_state === "closed") previous_state = "running";
+
   OFFER_VOUCHERS.update(
     { _id: voucher, vendor },
     { state: previous_state, previous_state: null }

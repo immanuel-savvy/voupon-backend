@@ -560,6 +560,8 @@ const close_ticket = (req, res) => {
 const remove_from_closed_ticket = (req, res) => {
   let { event, previous_state, vendor } = req.body;
 
+  if (previous_state === "closed") previous_state = "upcoming";
+
   EVENTS.update(
     { _id: event, vendor },
     { state: previous_state, previous_state: null }
