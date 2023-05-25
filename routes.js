@@ -132,6 +132,7 @@ import {
   add_to_wishlist,
   close_product,
   create_product_et_service,
+  payment_callbacks,
   payment_data,
   products,
   product_subscription,
@@ -141,6 +142,7 @@ import {
   unclose_product,
   update_payment_data_with_reference,
   update_product,
+  user_subscriptions,
   vendor_closed_products,
   vendor_products_et_service,
   wishlist,
@@ -280,6 +282,7 @@ const router = (app) => {
   app.post("/products", products);
   app.post("/subscribe_to_product", subscribe_to_product);
   app.post("/product_subscription", product_subscription);
+  app.post("/user_subscriptions", user_subscriptions);
   app.post("/suspend_vendor/:vendor", suspend_vendor);
   app.post("/remove_suspension/:vendor", remove_suspension);
   app.post("/payment_data", payment_data);
@@ -292,6 +295,8 @@ const router = (app) => {
   app.post("/unclose_product", unclose_product);
   app.post("/vendor_closed_products", vendor_closed_products);
   app.post("/vendor_products_et_service/:vendor", vendor_products_et_service);
+
+  app.post("/payment_callbacks/:reference", payment_callbacks);
 
   app.post("/paystack_webhook_url", paystack_webhook_url);
 };

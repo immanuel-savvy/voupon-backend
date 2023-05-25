@@ -11,11 +11,16 @@ import {
   VENDORS,
   VENDOR_PRODUCTS,
   VENDOR_SUBSCRIPTIONS,
-  WALLETS,
+  GLOBALS,
   WISHLIST,
 } from "../ds/conn";
-import { domain_name, paystack_secret_key } from "./admin";
+import { client_domain, paystack_secret_key } from "./admin";
 import { save_image } from "./utils";
+
+const user_subscriptions = (req, res) => {
+  let { user } = req.body;
+  res.json({ ok: true, data: USER_SUBSCRIPTIONS.read({ user }) });
+};
 
 const create_product_et_service = (req, res) => {
   let product = req.body;
@@ -35,6 +40,9 @@ const create_product_et_service = (req, res) => {
   VENDORS.update(product.vendor, { products: { $inc: 1 } });
 
   product.installments.map((installment) => {
+    let i_price = Number(product[`${installment}_product_price`]),
+      i_interval = Number(product[`number_if_${installment}_payments`]);
+
     axios({
       url: "https://api.paystack.co/plan",
       method: "post",
@@ -45,8 +53,8 @@ const create_product_et_service = (req, res) => {
       data: {
         name: product.title,
         interval: installment,
-        amount: String(Number(product[`${installment}_product_price`]) * 100),
-        invoice_limit: Number(product[`number_of_${installment}_payments`]),
+        amount: String((i_price / i_interval) * 100),
+        invoice_limit: Number(i_interval),
       },
     })
       .then((data) => {
@@ -213,7 +221,7 @@ const subscribe_to_product = (req, res) => {
 
   let result = SUBCRIPTIONS.write(subscription);
 
-  GLOBAL_subscriptions.update(
+  GLOBALS.update(
     { global: GLOBAL_subscriptions },
     { subcribers: { $push: result._id } }
   );
@@ -237,7 +245,12 @@ const subscribe_to_product = (req, res) => {
   res.json({
     ok: true,
     message: "product subscription",
-    data: SUBCRIPTIONS.readone(result._id),
+    data: {
+      ...SUBCRIPTIONS.readone(result._id),
+      redirect: `${client_domain}/product?${
+        (product && product._id) || product
+      }`,
+    },
   });
 };
 
@@ -305,9 +318,11 @@ const installment_days = new Object({
 
 const payment_callbacks = (req, res) => {
   let { reference } = req.params;
+  console.log(reference, "REFREEN");
   let data = PAYMENT_DATA.readone({ reference, resolved: { $ne: true } });
+  console.log(data, "GHERE");
 
-  LOGS.write(data);
+  console.log(LOGS.write(data));
 
   axios({
     url: `https://api.paystack.co/transaction/verify/${reference}`,
@@ -319,14 +334,19 @@ const payment_callbacks = (req, res) => {
   })
     .then((response) => {
       response = response.data;
+      console.log(response, "11");
 
       if (response.status) {
         response = response.data;
+        console.log("RESP1", response.status);
         if (response.status === "success") {
+          console.log(response.status, "YOYO");
           data.authorization = response.authorization;
           data.customer = response.customer;
 
+          console.log(data.product, "PRODUCT MANAGER");
           let product = PRODUCTS.readone(data.product);
+          console.log(product, product[`${data.installment}_plan_code`]);
           axios({
             url: "https://api.paystack.co/subscription",
             method: "post",
@@ -339,12 +359,14 @@ const payment_callbacks = (req, res) => {
               plan: product[`${data.installment}_plan_code`],
               authorization: data.authorization.authorization_code,
               start_date: new Date(
-                Date.now() + installment_days[installment] * 24 * 60 * 60 * 1000
+                Date.now() +
+                  installment_days[data.installment] * 24 * 60 * 60 * 1000
               ).toISOString(),
             },
           })
             .then((result) => {
               result = result.data;
+              console.log(result, "22");
 
               if (result.status) {
                 data.subscription_details = {
@@ -356,12 +378,18 @@ const payment_callbacks = (req, res) => {
                 PAYMENT_DATA.update(data._id, { resolved: true });
               }
             })
-            .catch((err) => console.log(err, "4"));
+            .catch((err) => {
+              console.log(err.response.data, "4");
+              res.json({ ok: false, data: { message: err.response.data } });
+            });
         }
       } else {
       }
     })
-    .then((err) => console.log(err, "3"));
+    .then((err) => {
+      console.log(err.response.data, "3");
+      res.json({ ok: false, data: { message: err.response.data } });
+    });
 };
 
 export {
@@ -382,4 +410,5 @@ export {
   products,
   wishlist,
   GLOBAL_subscriptions,
+  user_subscriptions,
 };
