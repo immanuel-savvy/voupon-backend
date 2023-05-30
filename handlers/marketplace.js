@@ -275,6 +275,8 @@ const subscribe_to_product = (req, res) => {
     { subcribers: { $push: result._id } }
   );
 
+  PRODUCTS.update(product._id || product, { total_subscribers: { $inc: 1 } });
+
   PRODUCT_SUBSCRIPTIONS.write({
     product,
     installment,
