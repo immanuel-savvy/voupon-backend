@@ -13,8 +13,12 @@ import {
   VENDOR_SUBSCRIPTIONS,
   GLOBALS,
   WISHLIST,
+  SUBSCRIPTION_PLANS,
+  SUBSCRIPTION_AUTHORIZATIONS,
+  WALLETS,
 } from "../ds/conn";
 import { client_domain, paystack_secret_key } from "./admin";
+import { a_day } from "./subscriptions";
 import { save_image } from "./utils";
 
 const user_subscriptions = (req, res) => {
@@ -41,7 +45,7 @@ const create_product_et_service = (req, res) => {
 
   product.installments.map((installment) => {
     let i_price = Number(product[`${installment}_product_price`]),
-      i_interval = Number(product[`number_if_${installment}_payments`]);
+      i_interval = Number(product[`number_of_${installment}_payments`]);
 
     axios({
       url: "https://api.paystack.co/plan",
@@ -53,7 +57,9 @@ const create_product_et_service = (req, res) => {
       data: {
         name: product.title,
         interval: installment,
-        amount: String((i_price / i_interval) * 100),
+        amount: String(
+          ((i_price - (product.down_payment || 0)) / i_interval) * 100
+        ),
         invoice_limit: Number(i_interval),
       },
     })
@@ -149,6 +155,22 @@ const product_subscription = (req, res) => {
 
 let GLOBAL_subscriptions = "product_subscriptions";
 
+const installments = new Array(
+  "daily",
+  "weekly",
+  "monthly",
+  "biannually",
+  "annually"
+);
+
+const i_days = new Object({
+  [installments[0]]: 1,
+  [installments[1]]: 7,
+  [installments[2]]: 30,
+  [installments[3]]: 90,
+  [installments[4]]: 365,
+});
+
 const subscribe_to_product = (req, res) => {
   let {
     value,
@@ -160,6 +182,10 @@ const subscribe_to_product = (req, res) => {
     title,
     number_of_payments,
     product,
+    subscription_details,
+    plan,
+    customer,
+    authorisation,
   } = req.body;
 
   payer = USERS.readone(payer);
@@ -184,7 +210,7 @@ const subscribe_to_product = (req, res) => {
 
   // let wallet_res = WALLETS.update(payer.wallet, { balance: { $dec: value } });
   let tx = {
-    type: "marketplace",
+    type: "enpl",
     user: payer._id,
     vendor: recipient._id,
     title: "product subscription",
@@ -194,15 +220,25 @@ const subscribe_to_product = (req, res) => {
   };
   TRANSACTIONS.write(tx);
 
-  // wallet_res = WALLETS.update(recipient.wallet, {
-  //   balance: { $inc: value },
-  //   total_earnings: { $inc: value },
-  // });
+  WALLETS.update(recipient.wallet, {
+    enpl: { $inc: value },
+    total_earnings: { $inc: value },
+  });
 
   tx.wallet = recipient.wallet;
   tx.credit = true;
 
   TRANSACTIONS.write(tx);
+
+  let auth = SUBSCRIPTION_AUTHORIZATIONS.readone({
+    authorisation_code: authorisation.authorization_code,
+  });
+  if (!auth)
+    auth = SUBSCRIPTION_AUTHORIZATIONS.write({
+      authorisation,
+      authorisation_code: authorisation.authorization_code,
+      customer: customer.customer_code,
+    });
 
   let subscription = {
     user: payer,
@@ -214,12 +250,25 @@ const subscribe_to_product = (req, res) => {
     number_of_payments,
     part_payments,
     recent_payment: Date.now(),
+    next_payment: Date.now() + i_days[installment] * a_day,
     running: true,
     installment,
     total_payments_made: 0,
+    authorisation: auth && auth._id,
   };
 
   let result = SUBCRIPTIONS.write(subscription);
+
+  SUBSCRIPTION_PLANS.write({
+    plan,
+    customer_details: customer,
+    customer: customer.customer_code,
+    subscription: result._id,
+    subscription_details,
+    subscription_code: subscription_details.subscription_code,
+    product,
+    authorisation: auth && auth._id,
+  });
 
   GLOBALS.update(
     { global: GLOBAL_subscriptions },
@@ -239,6 +288,7 @@ const subscribe_to_product = (req, res) => {
   USER_SUBSCRIPTIONS.write({
     user: payer._id,
     installment,
+    product,
     subscription: result._id,
   });
 
@@ -252,6 +302,12 @@ const subscribe_to_product = (req, res) => {
       }`,
     },
   });
+};
+
+const product_subscribers = (req, res) => {
+  let { product } = req.body;
+
+  res.json({ ok: true, data: PRODUCT_SUBSCRIPTIONS.read({ product }) });
 };
 
 const close_product = (req, res) => {
@@ -318,11 +374,8 @@ const installment_days = new Object({
 
 const payment_callbacks = (req, res) => {
   let { reference } = req.params;
-  console.log(reference, "REFREEN");
-  let data = PAYMENT_DATA.readone({ reference, resolved: { $ne: true } });
-  console.log(data, "GHERE");
 
-  console.log(LOGS.write(data));
+  let data = PAYMENT_DATA.readone({ reference, resolved: { $ne: true } });
 
   axios({
     url: `https://api.paystack.co/transaction/verify/${reference}`,
@@ -334,19 +387,15 @@ const payment_callbacks = (req, res) => {
   })
     .then((response) => {
       response = response.data;
-      console.log(response, "11");
 
       if (response.status) {
         response = response.data;
-        console.log("RESP1", response.status);
         if (response.status === "success") {
-          console.log(response.status, "YOYO");
-          data.authorization = response.authorization;
+          data.authorisation = response.authorization;
           data.customer = response.customer;
 
-          console.log(data.product, "PRODUCT MANAGER");
           let product = PRODUCTS.readone(data.product);
-          console.log(product, product[`${data.installment}_plan_code`]);
+          data.plan = product[`${data.installment}_plan_code`];
           axios({
             url: "https://api.paystack.co/subscription",
             method: "post",
@@ -356,8 +405,8 @@ const payment_callbacks = (req, res) => {
             },
             data: {
               customer: data.customer.customer_code,
-              plan: product[`${data.installment}_plan_code`],
-              authorization: data.authorization.authorization_code,
+              plan: data.plan,
+              authorization: data.authorisation.authorization_code,
               start_date: new Date(
                 Date.now() +
                   installment_days[data.installment] * 24 * 60 * 60 * 1000
@@ -366,7 +415,6 @@ const payment_callbacks = (req, res) => {
           })
             .then((result) => {
               result = result.data;
-              console.log(result, "22");
 
               if (result.status) {
                 data.subscription_details = {
@@ -410,5 +458,6 @@ export {
   products,
   wishlist,
   GLOBAL_subscriptions,
+  product_subscribers,
   user_subscriptions,
 };

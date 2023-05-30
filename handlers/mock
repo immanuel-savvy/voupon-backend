@@ -1,0 +1,81 @@
+{
+  "data": {
+    "event": "charge.success",
+    "data": {
+      "id": 2841872866,
+      "domain": "test",
+      "status": "success",
+      "reference": "c07aabfd488e257b001f8e9578c979ab8e63cec4ff0e6da9",
+      "amount": 9000000,
+      "message": null,
+      "gateway_response": "Approved",
+      "paid_at": "2023-05-29T13:45:30.000Z",
+      "created_at": "2023-05-29T13:45:28.000Z",
+      "channel": "card",
+      "currency": "NGN",
+      "ip_address": null,
+      "metadata": {
+        "invoice_action": "create"
+      },
+      "fees_breakdown": null,
+      "log": null,
+      "fees": 145000,
+      "fees_split": null,
+      "authorization": {
+        "authorization_code": "AUTH_ijw7c8iz0p",
+        "bin": "408408",
+        "last4": "4081",
+        "exp_month": "12",
+        "exp_year": "2030",
+        "channel": "card",
+        "card_type": "visa ",
+        "bank": "TEST BANK",
+        "country_code": "NG",
+        "brand": "visa",
+        "reusable": true,
+        "signature": "SIG_bb2VCIjRC0YXRPoIlQZf",
+        "account_name": null,
+        "receiver_bank_account_number": null,
+        "receiver_bank": null
+      },
+      "customer": {
+        "id": 112144286,
+        "first_name": "",
+        "last_name": "",
+        "email": "immanuelsavvy@gmail.com",
+        "customer_code": "CUS_g3e290bk7vwhfxl",
+        "phone": "",
+        "metadata": null,
+        "risk_action": "default",
+        "international_format_phone": null
+      },
+      "plan": {
+        "id": 828201,
+        "name": "Greycious",
+        "plan_code": "PLN_nj8gyqjek2vfi8e",
+        "description": null,
+        "amount": 9000000,
+        "interval": "daily",
+        "send_invoices": 1,
+        "send_sms": 1,
+        "currency": "NGN"
+      },
+      "subaccount": {},
+      "split": {},
+      "order_id": null,
+      "paidAt": "2023-05-29T13:45:30.000Z",
+      "requested_amount": 9000000,
+      "pos_transaction_data": null,
+      "source": {
+        "type": "api",
+        "source": "merchant_api",
+        "entry_point": "charge",
+        "identifier": null
+      }
+    }
+  },
+  "_id": "logs~fxBkcKq7pow38gki~1685367935356",
+  "created": 1685367935356,
+  "updated": 1685367935357,
+  "valid": true
+}

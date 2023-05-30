@@ -1,21 +1,19 @@
 import {
   EVENTS,
   EVENT_TICKETS,
-  GLOBALS,
-  LOGS,
-  NOTIFICATIONS,
   SUBCRIPTIONS,
+  SUBSCRIPTION_PLANS,
   TRANSACTIONS,
-  USERS,
-  VENDORS,
   WALLETS,
 } from "../ds/conn";
-import { event_reminder_emails } from "./emails";
-import { GLOBAL_subscriptions } from "./marketplace";
-import { default_user } from "./starter";
+import {
+  event_reminder_emails,
+  installment_payment_recieved_email,
+} from "./emails";
 import { send_mail, to_title } from "./users";
 import crypto from "crypto";
 import { paystack_secret_key } from "./admin";
+import axios from "axios";
 
 const a_day = 60 * 60 * 24 * 1000;
 
@@ -122,9 +120,6 @@ const event_reminders = () => {
 };
 
 const paystack_webhook_url = (req, res) => {
-  let event = req.body;
-  let result = LOGS.write({ data: event });
-
   let hash = crypto
     .createHmac("sha512", paystack_secret_key)
     .update(JSON.stringify(req.body))
@@ -132,12 +127,139 @@ const paystack_webhook_url = (req, res) => {
 
   if (hash == req.headers["x-paystack-signature"]) {
     // Retrieve the request's body
+    let { event, data } = req.body;
 
-    LOGS.update(result._id, { valid: true });
+    if (event === "charge.success") {
+      let { customer, plan } = data;
 
-    // Do something with event
+      if (plan && plan.plan_code) {
+        let subscription_plan = SUBSCRIPTION_PLANS.readone({
+          plan: plan.plan_code,
+          customer: customer.customer_code,
+        });
+        if (subscription_plan) {
+          axios({
+            method: "get",
+            url: `https://api.paystack.co/subscription/${subscription_plan.subscription_code}`,
+            headers: {
+              Authorization: `Bearer ${paystack_secret_key}`,
+              "Content-Type": "application/json",
+            },
+          })
+            .then((response) => {
+              response = response.data;
+              let { status, data } = response;
+              status &&
+                SUBCRIPTIONS.update(subscription_plan.subscription._id, {
+                  next_payment: new Date(data.next_payment_date).getTime(),
+                });
+            })
+            .catch((e) =>
+              console.log(
+                e,
+                `Cannot get subscription, ${subscription_plan._id}`
+              )
+            );
+
+          let result = SUBCRIPTIONS.update(subscription_plan.subscription._id, {
+            total_payments_made: { $inc: 1 },
+            recent_payment: Date.now(),
+          });
+          if (
+            result.total_payments &&
+            result.total_payments_made >= result.total_payments
+          ) {
+          }
+
+          let vendor = subscription_plan.subscription.product.vendor;
+          WALLETS.update(vendor.wallet, {
+            enpl: { $inc: data.amount / 100 },
+            total_earnings: { $inc: data.amount / 100 },
+          });
+          let { user, product } = subscription_plan.subscription;
+
+          let tx = {
+            type: "enpl",
+            user: user._id,
+            vendor: vendor._id,
+            title: "product installment",
+            value: data.amount / 100,
+            data: new Array(product._id, subscription_plan.subscription._id),
+            wallet: vendor.wallet,
+          };
+          TRANSACTIONS.write(tx);
+
+          tx.wallet = user.wallet;
+          tx.authorisation = subscription_plan.authorisation;
+          TRANSACTIONS.write(tx);
+
+          send_mail({
+            title: "[Voucher Africa] Payment Recieved",
+            recipient: user.email,
+            recipient_name: to_title(`${user.firstname} ${user.lastname}`),
+            html: installment_payment_recieved_email(subscription_plan, true),
+          });
+          send_mail({
+            title: "[Voucher Africa] Payment Recieved",
+            recipient: vendor.email,
+            recipient_name: to_title(`${vendor.name}`),
+            html: installment_payment_recieved_email(subscription_plan),
+          });
+        }
+      }
+    } else if (event === "invoice.payment_failed") {
+      let { subscription } = data;
+
+      if (subscription && subscription.subscription_code) {
+        let subscription_plan = SUBSCRIPTION_PLANS.readone({
+          subscription_code: subscription.subscription_code,
+        });
+
+        if (subscription_plan) {
+          let vendor = subscription_plan.subscription.product.vendor;
+          let { user, product } = subscription_plan.subscription;
+
+          let tx = {
+            type: "enpl",
+            user: user._id,
+            vendor: vendor._id,
+            title: "[FAILED] product installment",
+            value: data.amount / 100,
+            data: new Array(product._id, subscription_plan.subscription._id),
+            wallet: vendor.wallet,
+            status: "failed",
+          };
+          TRANSACTIONS.write(tx);
+
+          tx.wallet = user.wallet;
+          tx.authorisation = subscription_plan.authorisation;
+          TRANSACTIONS.write(tx);
+
+          send_mail({
+            title: "[Voucher Africa] Subscription Payment Failed",
+            recipient: user.email,
+            recipient_name: to_title(`${user.firstname} ${user.lastname}`),
+            html: installment_payment_recieved_email(
+              subscription_plan,
+              true,
+              true
+            ),
+          });
+          send_mail({
+            title: "[Voucher Africa] Subscription Payment Failed",
+            recipient: vendor.email,
+            recipient_name: to_title(`${vendor.name}`),
+            html: installment_payment_recieved_email(
+              subscription_plan,
+              null,
+              true
+            ),
+          });
+        }
+      }
+    }
   }
   res.send(200);
 };
 
-export { refresh_subscriptions, event_reminders, paystack_webhook_url };
+export { refresh_subscriptions, event_reminders, paystack_webhook_url, a_day };

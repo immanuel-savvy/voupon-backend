@@ -135,6 +135,7 @@ import {
   payment_callbacks,
   payment_data,
   products,
+  product_subscribers,
   product_subscription,
   remove_from_wishlist,
   remove_payment_data,
@@ -283,6 +284,7 @@ const router = (app) => {
   app.post("/subscribe_to_product", subscribe_to_product);
   app.post("/product_subscription", product_subscription);
   app.post("/user_subscriptions", user_subscriptions);
+  app.post("/product_subscribers", product_subscribers);
   app.post("/suspend_vendor/:vendor", suspend_vendor);
   app.post("/remove_suspension/:vendor", remove_suspension);
   app.post("/payment_data", payment_data);

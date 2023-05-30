@@ -21,6 +21,7 @@ let USERS,
   REDEEMED_VOUCHERS,
   PRODUCT_SUBSCRIPTIONS,
   VENDOR_SUBSCRIPTIONS,
+  SUBSCRIPTION_PLANS,
   USER_SUBSCRIPTIONS,
   SUBCRIPTIONS,
   COMMENTS,
@@ -36,6 +37,7 @@ let USERS,
   VENDOR_EVENTS,
   VENDORS_COUPONS,
   USER_COUPONS,
+  SUBSCRIPTION_AUTHORIZATIONS,
   WISHLIST,
   ACCOUNTS,
   LOGS,
@@ -54,6 +56,7 @@ const ds_conn = () => {
 
   USERS = gds.folder("users");
   VENDORS = gds.folder("vendors");
+  SUBSCRIPTION_AUTHORIZATIONS = gds.folder("subscription_authorisation");
   OFFER_VOUCHERS = gds.folder("offer_vouchers", "vendor", "voucher");
   OPEN_VOUCHERS = gds.folder("open_vouchers", "user", "voucher");
   ADMINSTRATORS = gds.folder("adminstrators");
@@ -64,12 +67,13 @@ const ds_conn = () => {
   REVIEWS = gds.folder("reviews");
   LOGS = gds.folder("logs");
   FAQS = gds.folder("faqs");
+  SUBSCRIPTION_PLANS = gds.folder("subscription_plans", "plan", "subscription");
   PRODUCTS = gds.folder("products", null, "vendor");
   VENDOR_PRODUCTS = gds.folder("vendor_products", "vendor", "product");
   TRANSACTIONS = gds.folder(
     "transactions",
     "wallet",
-    new Array("data", "vendor", "customer")
+    new Array("data", "vendor", "authorisation", "customer")
   );
 
   WALLETS = gds.folder("wallets");
@@ -112,7 +116,7 @@ const ds_conn = () => {
   SUBCRIPTIONS = gds.folder(
     "subscriptions",
     null,
-    new Array("product", "user")
+    new Array("product", "authorisation", "user")
   );
 };
 
@@ -122,6 +126,7 @@ export {
   ADMIN_HASH,
   PAYMENT_DATA,
   ADMINSTRATORS,
+  SUBSCRIPTION_AUTHORIZATIONS,
   USERS_HASH,
   COUPONS,
   VENDORS_COUPONS,
@@ -137,6 +142,7 @@ export {
   USER_VERIFICATION_DETAILS,
   REDEEMED_VOUCHERS,
   USER_COUPONS,
+  SUBSCRIPTION_PLANS,
   VENDOR_EVENTS,
   COMMENTS,
   OFFER_VOUCHERS,

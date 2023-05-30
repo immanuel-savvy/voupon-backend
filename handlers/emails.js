@@ -95,12 +95,21 @@ const user_verified_email = (details) =>
 const event_reminder_emails = (details) =>
   `<div>${JSON.stringify(details)}</div>`;
 
+const installment_payment_recieved_email = (
+  details,
+  user = false,
+  failed = false
+) => {
+  return `<div>${JSON.stringify(details)}</div>`;
+};
+
 export {
   verification,
   voucher_purchased_email,
   generate_newsletter,
   user_verified_email,
   user_generated,
+  installment_payment_recieved_email,
   vendor_verified,
   voucher_redeemed_email,
   voucher_otp_email,
