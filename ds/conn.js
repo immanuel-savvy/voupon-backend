@@ -73,7 +73,7 @@ const ds_conn = () => {
   TRANSACTIONS = gds.folder(
     "transactions",
     "wallet",
-    new Array("data", "vendor", "authorisation", "customer")
+    new Array("data", "subscription", "vendor", "authorisation", "customer")
   );
 
   WALLETS = gds.folder("wallets");

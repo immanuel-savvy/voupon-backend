@@ -103,6 +103,10 @@ const installment_payment_recieved_email = (
   return `<div>${JSON.stringify(details)}</div>`;
 };
 
+const payment_complete_email = (details) => {
+  return `<div>${JSON.stringify(details)}</div>`;
+};
+
 export {
   verification,
   voucher_purchased_email,
@@ -114,5 +118,6 @@ export {
   voucher_redeemed_email,
   voucher_otp_email,
   event_reminder_emails,
+  payment_complete_email,
   forgot_password_email,
 };

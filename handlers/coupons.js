@@ -56,10 +56,13 @@ const coupons = (req, res) => {
   res.json({
     ok: true,
     message: "coupons",
-    data: COUPONS.read(type ? { type } : null, {
-      limit: Number(limit),
-      skip: Number(skip),
-    }),
+    data: COUPONS.read(
+      type ? { type /*  duration: { $gt: Date.now() }  */ } : null, // { duration: { $gt: Date.now(), $ne: null } },
+      {
+        limit: Number(limit),
+        skip: Number(skip),
+      }
+    ),
   });
 };
 

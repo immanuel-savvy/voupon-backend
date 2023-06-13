@@ -134,6 +134,7 @@ import {
   create_product_et_service,
   payment_callbacks,
   payment_data,
+  product,
   products,
   product_subscribers,
   product_subscription,
@@ -143,6 +144,7 @@ import {
   unclose_product,
   update_payment_data_with_reference,
   update_product,
+  user_product_subscriptions,
   user_subscriptions,
   vendor_closed_products,
   vendor_products_et_service,
@@ -169,6 +171,7 @@ const router = (app) => {
   app.get("/top_vendors", top_vendors);
   app.get("/get_banks", get_banks);
   app.get("/accounts/:wallet", accounts);
+  app.get("/product/:product", product);
   app.get("/user_kyc_doc/:user", user_kyc_doc);
   app.get("/event_page/:vendor/:event", event_page);
   app.get("/voucher_page/:voucher/:vendor", voucher_page);
@@ -296,6 +299,7 @@ const router = (app) => {
   app.post("/close_product", close_product);
   app.post("/unclose_product", unclose_product);
   app.post("/vendor_closed_products", vendor_closed_products);
+  app.post("/user_product_subscriptions", user_product_subscriptions);
   app.post("/vendor_products_et_service/:vendor", vendor_products_et_service);
 
   app.post("/payment_callbacks/:reference", payment_callbacks);
