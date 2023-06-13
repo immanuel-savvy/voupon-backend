@@ -152,6 +152,7 @@ const search_coupons = (req, res) => {
  * @apiDescription Call this function to reflect the usage of a coupon after been applied, to avoid overusage of a coupon overtime.
  * @apiBody {String} coupon Coupon ID as returned from `/retrieve_coupon` endpoint
  * @apiBody {String} user User ID of coupon owner in the case of a `premium` coupon
+ * @apiBody {boolean} verbose To tell the API to return a detailed coupon data
  *
  * @apiSuccessExample {json} Successful Response:
  * { success: true, coupon: "coupons~dy62P4W6Sa92L02YCF~1677750283500" }
