@@ -158,7 +158,7 @@ const search_coupons = (req, res) => {
  *
  */
 const applied_coupon = (req, res) => {
-  let { coupon, user } = req.body;
+  let { coupon, user, verbose } = req.body;
 
   if (!coupon)
     return res.json({
@@ -194,7 +194,11 @@ const applied_coupon = (req, res) => {
   res.json({
     ok: true,
     message: "coupon applied",
-    data: { success: true, coupon },
+    data: {
+      success: true,
+      coupon,
+      detailed_coupon: verbose ? COUPONS.readone(coupon) : null,
+    },
   });
 };
 

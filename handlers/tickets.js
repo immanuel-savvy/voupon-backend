@@ -1,5 +1,6 @@
 import { generate_random_string } from "generalised-datastore/utils/functions";
 import {
+  COUPONS,
   EVENTS,
   EVENT_TICKETS,
   TICKETS,
@@ -83,8 +84,10 @@ const events = (req, res) => {
 
 const ticket_purchased = (req, res) => {
   let details = req.body;
-  let { user, email, quantity } = details;
+  let { user, coupon, email, quantity } = details;
   quantity = Number(quantity || 1);
+
+  if (coupon) coupon = COUPONS.readone(coupon);
 
   let vendor = VENDORS.readone(details.vendor);
   if (vendor.suspended) {
@@ -141,7 +144,13 @@ const ticket_purchased = (req, res) => {
     );
     ticket_res = TICKETS.update(
       { user, event: event._id },
-      { ticket_code: { $push: ticket_code }, quantity: { $inc: quantity } }
+      coupon
+        ? {
+            ticket_code: { $push: ticket_code },
+            coupons: { $push: { coupon: coupon._id, ticket_code } },
+            quantity: { $inc: quantity },
+          }
+        : { ticket_code: { $push: ticket_code }, quantity: { $inc: quantity } }
     );
   } else {
     ticket = {
@@ -151,6 +160,8 @@ const ticket_purchased = (req, res) => {
       user,
       used_codes: new Array(),
     };
+    if (coupon) ticket.coupons = new Array({ coupon: coupon._id, ticket_code });
+    else ticket.coupons = new Array();
 
     ticket_res = TICKETS.write(ticket);
     ticket._id = ticket_res._id;
@@ -182,9 +193,12 @@ const ticket_purchased = (req, res) => {
     title: "ticket purchased",
     vendor: details.vendor,
     ticket_code,
-    value: event.value,
+    value: coupon
+      ? event.value - (Number(coupon.value) / 100) * event.value
+      : event.value,
     quantity,
     credit: true,
+    coupon: coupon && coupon._id,
   };
 
   TRANSACTIONS.write(tx);
@@ -416,6 +430,20 @@ const use_ticket = (req, res) => {
   for (const v in values)
     if (values[v].includes(ticket_code)) value = Number(v);
 
+  let coupon_applied;
+  if (ticket.coupons && ticket.coupons.length) {
+    for (let c = 0; c < ticket.coupons.length; c++) {
+      let coupon = ticket.coupons[c];
+      if (coupon.ticket_code === ticket_code) {
+        coupon_applied = COUPONS.readone(coupon.coupon);
+        break;
+      }
+    }
+  }
+
+  if (coupon_applied)
+    value = value - value * (Number(coupon_applied.value) / 100);
+
   let vendor_value = 0;
   if (Number(value) > 0) {
     vendor_value = value - value * 0.05;
@@ -432,6 +460,7 @@ const use_ticket = (req, res) => {
     voucher_code: ticket.voucher_code,
     value: vendor_value,
     credit: true,
+    coupon: coupon_applied && coupon_applied._id,
     data: ticket._id,
   };
 
@@ -453,6 +482,7 @@ const use_ticket = (req, res) => {
       voucher_code: ticket.voucher_code,
       title: "Offer Voucher Sales Commission",
       wallet: default_wallet,
+      coupon: coupon_applied && coupon_applied._id,
       type: "ticket",
       user,
       ticket: ticket._id,
