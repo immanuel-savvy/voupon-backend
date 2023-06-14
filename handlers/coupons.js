@@ -301,6 +301,21 @@ const user_coupons = (req, res) => {
   });
 };
 
+const calculate_coupon_discount = (coupon, value) => {
+  if (!coupon) return value;
+
+  let val = Number(coupon.val);
+  value = Number(value);
+  if (!val || !value) return value;
+
+  val /= 100;
+  val *= value;
+
+  value -= val;
+
+  return value;
+};
+
 export {
   new_coupon,
   search_coupons,
@@ -308,6 +323,7 @@ export {
   verify_coupon,
   coupons,
   retrieve_coupon,
+  calculate_coupon_discount,
   user_coupons,
   applied_coupon,
   premium_coupon_obtained,

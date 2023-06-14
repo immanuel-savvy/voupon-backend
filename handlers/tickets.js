@@ -16,6 +16,7 @@ import { default_wallet } from "./starter";
 import { send_mail } from "./users";
 import { save_image } from "./utils";
 import { reset_vendor_id } from "./voucher";
+import { calculate_coupon_discount } from "./coupons";
 
 const ticket_otp = new Object();
 
@@ -193,9 +194,7 @@ const ticket_purchased = (req, res) => {
     title: "ticket purchased",
     vendor: details.vendor,
     ticket_code,
-    value: coupon
-      ? event.value - (Number(coupon.value) / 100) * event.value
-      : event.value,
+    value: calculate_coupon_discount(coupon, event.value),
     quantity,
     credit: true,
     coupon: coupon && coupon._id,
@@ -441,8 +440,7 @@ const use_ticket = (req, res) => {
     }
   }
 
-  if (coupon_applied)
-    value = value - value * (Number(coupon_applied.value) / 100);
+  if (coupon_applied) value = calculate_coupon_discount(coupon_applied, value);
 
   let vendor_value = 0;
   if (Number(value) > 0) {

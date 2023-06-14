@@ -1,6 +1,7 @@
 import axios from "axios";
 import { _id } from "generalised-datastore/utils/functions";
 import {
+  COUPONS,
   OFFER_VOUCHERS,
   OPEN_VOUCHERS,
   PURCHASED_VOUCHERS,
@@ -23,6 +24,7 @@ import { default_wallet } from "./starter";
 import { send_mail } from "./users";
 import { save_image } from "./utils";
 import { rewards } from "./wallets";
+import { calculate_coupon_discount } from "./coupons";
 
 /**
  * @api {post} /vendor_id Vendor ID
@@ -157,6 +159,9 @@ const get_offer_vouchers = (req, res) => {
 
 const voucher_purchased = (req, res) => {
   let details = req.body;
+  let { coupon } = details;
+
+  if (coupon) coupon = COUPONS.readone(coupon);
 
   let voucher_code = generate_random_string(6, "alpha").toUpperCase();
   while (PURCHASED_VOUCHERS.readone({ voucher_code }))
@@ -201,8 +206,9 @@ const voucher_purchased = (req, res) => {
     user: details.user,
     email: details.email,
     voucher_code,
-    value: offer_voucher.value,
+    value: calculate_coupon_discount(coupon, offer_voucher.value),
     state: "unused",
+    coupon: coupon && coupon._id,
   });
 
   let tx = {
@@ -211,8 +217,9 @@ const voucher_purchased = (req, res) => {
     type: "voucher",
     title: "voucher purchased",
     vendor: details.vendor,
+    coupon,
     voucher_code,
-    value: offer_voucher.value,
+    value: calculate_coupon_discount(coupon, offer_voucher.value),
     credit: true,
   };
 
@@ -529,7 +536,7 @@ const redeem_voucher = (req, res) => {
   let { firstname, lastname, referral } = user_;
   email = email || user_.email;
 
-  let { value } = voucher;
+  let { value, coupon } = voucher;
   voucher = voucher.voucher;
 
   if (!voucher) return res.json({ ok: false, message: "voucher not found" });
@@ -611,6 +618,7 @@ const redeem_voucher = (req, res) => {
             title: "voucher redeemed",
             vendor: voucher.vendor,
             voucher_code: voucher_code,
+            coupon,
             value: value - rewards.voucher_redeemed_fee,
             wallet: USERS.readone(user).wallet,
           };
@@ -634,6 +642,7 @@ const redeem_voucher = (req, res) => {
             user,
             title: "voucher redeemed fee",
             vendor: voucher.vendor,
+            coupon,
             voucher_code: voucher_code,
             value: tx_fee,
             wallet: default_wallet,
