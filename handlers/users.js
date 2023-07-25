@@ -88,6 +88,8 @@ const users = (req, res) => {
 
 const signup = (req, res) => {
   let user = req.body;
+  let v = user.vendor;
+  delete user.vendor;
 
   let key = user.password;
   delete user.password;
@@ -155,13 +157,14 @@ const signup = (req, res) => {
 
   let fullname = to_title(`${user.firstname} ${user.lastname}`);
 
-  send_mail({
-    recipient: user.email,
-    recipient_name: fullname,
-    subject: "[Voucher Africa] Please verify your email",
-    sender_name: "Voucher Africa",
-    html: verification(code, fullname),
-  });
+  !vendor &&
+    send_mail({
+      recipient: user.email,
+      recipient_name: fullname,
+      subject: "[Voucher Africa] Please verify your email",
+      sender_name: "Voucher Africa",
+      html: verification(code, fullname),
+    });
 
   res.json({
     ok: true,
@@ -255,6 +258,22 @@ const login = (req, res) => {
       user: user._id,
     });
     USERS.update(user._id, { wallet: wallet_res._id });
+  }
+
+  if (!user.verified) {
+    let code = generate_random_string(6);
+    email_verification_codes[user.email] = code;
+
+    let fullname = to_title(`${user.firstname} ${user.lastname}`);
+
+    !vendor &&
+      send_mail({
+        recipient: user.email,
+        recipient_name: fullname,
+        subject: "[Voucher Africa] Please verify your email",
+        sender_name: "Voucher Africa",
+        html: verification(code, fullname),
+      });
   }
 
   res.json({ ok: true, message: "user logged-in", data: user });

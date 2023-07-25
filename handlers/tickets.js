@@ -444,7 +444,7 @@ const use_ticket = (req, res) => {
 
   let vendor_value = 0;
   if (Number(value) > 0) {
-    vendor_value = value - value * 0.05;
+    vendor_value = value - value * (vendor.commision_fee / 100 || 0.25);
     WALLETS.update(vendor.wallet, { tickets: { $inc: vendor_value } });
   }
 

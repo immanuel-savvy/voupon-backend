@@ -11,7 +11,7 @@ const rewards = new Object({
   annual_subscription: 10000,
   daily_reward_claim: 50,
   voucher_redeemed_fee: 100,
-  subscription_fee: 15000,
+  subscription_fee: 20000,
 });
 
 const transactions = (req, res) => {

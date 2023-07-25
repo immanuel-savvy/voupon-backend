@@ -53,16 +53,26 @@ const vendor_coupons = (req, res) => {
 const coupons = (req, res) => {
   let { type, limit, skip } = req.body;
 
+  let query = {
+    duration: {
+      $superquery: (v) => {
+        if (
+          (v.duration && new Date(v.duration).getTime() < Date.now()) ||
+          v.quantities <= 0
+        )
+          return false;
+        return true;
+      },
+    },
+  };
+  if (type) query.type = type;
   res.json({
     ok: true,
     message: "coupons",
-    data: COUPONS.read(
-      type ? { type /*  duration: { $gt: Date.now() }  */ } : null, // { duration: { $gt: Date.now(), $ne: null } },
-      {
-        limit: Number(limit),
-        skip: Number(skip),
-      }
-    ),
+    data: COUPONS.read(query, {
+      limit: Number(limit),
+      skip: Number(skip),
+    }),
   });
 };
 

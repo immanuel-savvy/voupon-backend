@@ -553,6 +553,46 @@ const redeem_voucher = (req, res) => {
       return res.json({ ok: false, data: { message: "Email not found" } });
   }
 
+  value = Number(value);
+  if (value <= 0) {
+    if (voucher_type === "open_voucher")
+      VOUCHERS.update(voucher._id, { redeemed: true, state: "redeemed" });
+
+    (voucher_type === "offer_voucher" ? USER_VOUCHERS : OPEN_VOUCHERS).update(
+      { user, _id },
+      { state: "redeemed" }
+    );
+
+    let tx = {
+      voucher: _id,
+      type: "voucher",
+      user,
+      title: "voucher redeemed",
+      vendor: voucher.vendor,
+      voucher_code: voucher_code,
+      coupon,
+      value: value,
+      wallet: USERS.readone(user).wallet,
+    };
+
+    TRANSACTIONS.write(tx);
+
+    send_mail({
+      recipient: email,
+      recipient_name: `${firstname} ${lastname}`,
+      subject: "[Voucher Africa] Voucher Redeemed",
+      html: voucher_redeemed_email({ ...details, voucher_code }),
+    });
+
+    res.json({
+      ok: true,
+      message: "voucher redeemed",
+      data: { voucher: _id, redeemed: true },
+    });
+
+    return;
+  }
+
   axios({
     url: "https://api.paystack.co/transferrecipient",
     method: "post",
@@ -572,7 +612,6 @@ const redeem_voucher = (req, res) => {
       result = result.data;
 
       let recipient = result.data.recipient_code;
-      value = Number(value);
 
       axios({
         url: "https://api.paystack.co/transfer",
@@ -916,7 +955,7 @@ const use_voucher = (req, res) => {
 
   value = Number(voucher.voucher.vendor ? Number(voucher.value) : value);
 
-  let vendor_value = value - value * 0.05;
+  let vendor_value = value - value * (vendor.commision_fee / 100 || 0.25);
   WALLETS.update(vendor.wallet, { vouchers: { $inc: vendor_value } });
 
   let tx = {

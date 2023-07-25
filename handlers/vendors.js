@@ -157,6 +157,14 @@ const accounts = (req, res) => {
   });
 };
 
+const update_vendor_commision = (req, res) => {
+  let { vendor, commision_fee } = req.body;
+
+  VENDORS.update(vendor, { commision_fee });
+
+  res.end();
+};
+
 const add_account = (req, res) => {
   let details = req.body;
 
@@ -213,6 +221,7 @@ export {
   vendors,
   vendors_by_category,
   accounts,
+  update_vendor_commision,
   vendor_availability,
   add_account,
 };

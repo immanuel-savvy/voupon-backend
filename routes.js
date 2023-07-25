@@ -59,6 +59,7 @@ import {
   vendors,
   vendor_availability,
   verify_vendor,
+  update_vendor_commision,
 } from "./handlers/vendors";
 import {
   can_redeem_voucher,
@@ -241,6 +242,7 @@ const router = (app) => {
 
   app.post("/vendor_id", vendor_id);
   app.post("/add_account", add_account);
+  app.post("/update_vendor_commision", update_vendor_commision);
   app.post("/withdraw_wallet", withdraw_wallet);
   app.post("/topup", topup);
   app.post("/wallet", wallet);

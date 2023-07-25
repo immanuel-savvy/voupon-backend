@@ -1,4 +1,4 @@
-import { ADMINSTRATORS, ADMIN_HASH, GLOBALS, VENDORS } from "../ds/conn";
+import { ADMINSTRATORS, ADMIN_HASH, GLOBALS, USERS, VENDORS } from "../ds/conn";
 import { GLOBAL_pending_vendors } from "./starter";
 
 const domain_name = "https://dev.voucherafrica.com:2555";
@@ -46,6 +46,7 @@ const stats = (req, res) => {
 
   let pending_vendors = GLOBALS.readone({ global: GLOBAL_pending_vendors });
   stats_.push({ title: "total_vendors", value: VENDORS.config.total_entries });
+  stats_.push({ title: "total_users", value: USERS.config.total_entries });
   stats_.push({
     title: "pending_vendors",
     value: pending_vendors.vendors.length,
